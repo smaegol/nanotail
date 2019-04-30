@@ -28,7 +28,7 @@ read_polya_single(polya_path, ensembl = TRUE)
 }}
 }
 \value{
-Returns a tibble
+a \link[tibble:tibble-package]{tibble}#'
 }
 \description{
 Read Single Nanopolish polyA predcitions from file

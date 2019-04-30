@@ -6,9 +6,9 @@
 #' @param batch - batch (or other additional variable)
 #' @param ensembl - are contig names ENSEMBL-compliant
 #'
-#' @return a [tibble][tibble::tibble-package]
 #' @export
 #'
+#' @return a [tibble][tibble::tibble-package]#'
 #' @examples
 read_polya_single <- function(polya_path, ensembl = TRUE) {
     # required asserts
@@ -24,6 +24,7 @@ read_polya_single <- function(polya_path, ensembl = TRUE) {
     assert_that(is_non_empty_file(polya_path),msg=paste("File ",polya_path," is empty",sep=""))
     assert_that(is_a_bool(ensembl),msg="Please provide TRUE/FALSE values for ensembl parameter")
 
+    message(paste0("Loading data from ",polya_path))
 
     polya_data <- data.table::fread(polya_path, data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE) %>% dplyr::as_tibble()
     polya_data %<>% dplyr::mutate(polya_length = round(polya_length))

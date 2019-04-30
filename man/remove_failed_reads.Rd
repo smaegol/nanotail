@@ -9,6 +9,9 @@ remove_failed_reads(polya_data)
 \arguments{
 \item{polya_data}{}
 }
+\value{
+a \link[tibble:tibble-package]{tibble}
+}
 \description{
 Title
 }

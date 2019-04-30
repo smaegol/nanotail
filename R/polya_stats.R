@@ -24,7 +24,7 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
 
   ###
 
-  test_formula = reformulate(grouping_factor,polya_length)
+  #test_formula = reformulate(grouping_factor,polya_length)
 
   # leave only those tanscripts which were identified in all conditions
   polya_data_complete_cases <-
@@ -36,8 +36,8 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
   # calculate statistics using Wilcoxon test (non-parametric)
   polya_data_stat_wilcoxon <-
     polya_data_complete %>% dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::mutate(
-      stats = suppressWarnings(wilcox.test(test_formula))$p.value,
-      ks_stats = suppressWarnings(FSA::ksTest(test_formula))$p.value)
+      stats = suppressWarnings(wilcox.test(as.formula(paste0("polya_length ~",grouping_factor))))$p.value,
+      ks_stats = suppressWarnings(FSA::ksTest(as.formula(paste0("polya_length ~",grouping_factor))))$p.value)
 
 
   # summarise statistics
@@ -86,10 +86,10 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
     p.adjust(polyA_data_stat_wilcoxon_summary$p.value_ks, method = "BH")
   polyA_data_stat_wilcoxon_summary$p.corr_ks <-
     pvals_BH_summary_KS
-  pvals_BH_summary_glm <-
-    p.adjust(polyA_data_stat_wilcoxon_summary$p.value_glm, method = "BH")
-  polyA_data_stat_wilcoxon_summary$p.corr_glm <-
-    pvals_BH_summary_glm
+ # pvals_BH_summary_glm <-
+   # p.adjust(polyA_data_stat_wilcoxon_summary$p.value_glm, method = "BH")
+ # polyA_data_stat_wilcoxon_summary$p.corr_glm <-
+    #pvals_BH_summary_glm
 
 
   return(
@@ -259,3 +259,36 @@ polya_summary_pivot_to_wide <- function(polya_data) {
       return(polya_data_summarized)
 }
 
+
+#' Title
+#'
+#' @param polya_data_summarized
+#'
+#' @return
+#' @export
+#'
+#' @examples
+calculate_pca <- function(polya_data_summarized) {
+
+
+}
+
+#' Title
+#'
+#' @param polya_data
+#'
+#' @return
+#' @export
+#'
+#' @examples
+calculate_processing_statistics <- function(polya_data) {
+
+  return_list <- list()
+  return_list$number_all_reads <- nrow(polya_data)
+  return_list$number_adapter_reads <- polya_data %>% dplyr::filter(qc_tag=='ADAPTER') %>% nrow()
+  return_list$number_noregion_reads <- polya_data %>% dplyr::filter(qc_tag=='NOREGION') %>% nrow()
+  return_list$number_read_load_failed_reads <- polya_data %>% dplyr::filter(qc_tag=='READ_FAILED_LOAD') %>% nrow()
+  return_list$number_suffclip_reads <- polya_data %>% dplyr::filter(qc_tag=='SUFFCLIP') %>% nrow()
+  return_list$number_pass_reads <- polya_data %>% dplyr::filter(qc_tag=='PASS') %>% nrow()
+  return (return_list)
+}

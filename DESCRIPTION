@@ -16,8 +16,8 @@ RoxygenNote: 6.1.1
 Suggests: 
     ggplot2,
     testthat,
-    shinyWidgets,
-    plotly
+    plotly,
+    annotables
 Imports: 
     magrittr,
     tidyr,
@@ -28,4 +28,7 @@ Imports:
     assertive,
     purrr,
     FSA,
-    tibble
+    tibble,
+    shinydashboard,
+    shinyWidgets,
+    RColorBrewer

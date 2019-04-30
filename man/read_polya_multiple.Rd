@@ -4,15 +4,19 @@
 \alias{read_polya_multiple}
 \title{Reads multiple samples at once}
 \usage{
-read_polya_multiple(samples_table)
+read_polya_multiple(samples_table, ...)
 }
 \arguments{
 \item{samples_table}{\itemize{
 \item data.frame or tibble containing samples description and paths
 }}
+
+\item{...}{\itemize{
+\item additional parameters to pass to read_polya_single(), like ensembl=\link{TRUE/FALSE}
+}}
 }
 \value{
-a tibble containing polyA predictions for all samples defined in the samples_table
+a \link[tibble:tibble-package]{tibble}
 }
 \description{
 Reads multiple samples at once

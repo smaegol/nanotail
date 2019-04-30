@@ -4,7 +4,7 @@
 \alias{summarize_polya}
 \title{Title}
 \usage{
-summarize_polya(polya_data)
+summarize_polya(polya_data, summary_factors = c("group"))
 }
 \arguments{
 \item{polya_data}{}
