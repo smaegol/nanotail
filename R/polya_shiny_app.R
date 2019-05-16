@@ -1,16 +1,9 @@
-# Define the NanoTail shiny interface UI
-nanotail_shiny_ui_old <- fluidPage(
+# TODO ShinyApp: Allow to choose columns shown in the table
+# TODO ShinyApp: Allow launching on raw polya data.frame, calculate statistics using selected factor in the app
+# TODO ShinyApp: Export report
+# TODO allow statistics on more than 2 levels of factor (anova?)
+# TODO Add withProgress
 
-
-  # Application title
-  titlePanel("NanoTail"),
-
-  fluidRow(
-    column(6,
-           DT::dataTableOutput('transcripts_table')),
-    column(4,plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4))
-  )
-)
 
 
 
@@ -131,12 +124,14 @@ nanoTailApp <- function(summary_table,polya_table) {
     shinydashboard::dashboardSidebar(
       width = 180,
       shinydashboard::sidebarMenu(id="tabs",
-        shinydashboard::menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+
         shinydashboard::menuItem("Basic Info", icon = icon("info-square"), tabName = "basicInfo"),
         shinydashboard::menuItem("Global distribution", icon = icon("chart-line-down"), tabName = "global_distr"),
-        shinydashboard::menuItem("Per transcript plots", icon = icon("dna"), tabName = "boxplots")
-      ),
-      shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
+        shinydashboard::menuItem("Per transcript plots", icon = icon("dna"), tabName = "boxplots"),
+        shinydashboard::menuItem("Differential expression", icon = icon("dna"), tabName = "diff_exp"),
+        shinydashboard::menuItem("About", tabName = "dashboard", icon = icon("dashboard"))
+      ),selectInput("groupingFactor","Group by",choices=polya_table %>% dplyr::select_if(is.factor) %>% colnames),
+shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                   choices = colors_pal, selected = "Set1", width = "100%",
                   choicesOpt = list(
                     content = sprintf(
@@ -147,16 +142,19 @@ nanoTailApp <- function(summary_table,polya_table) {
       ),
       uiOutput("Colorblind"),
       checkboxInput("reverse", "reverse color scale", value = FALSE),
-      selectInput("groupingFactor","Group by",choices=polya_table %>% dplyr::select_if(is.factor) %>% colnames)
-    ),
+      sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
+      sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10)
+),
 
     # body definition ---------------------------------------------------------
     shinydashboard::dashboardBody(
 
       shinydashboard::tabItems(
         shinydashboard::tabItem(tabName = "dashboard",
-                                h2("Nanotail")
-        ),
+                                fillPage(padding = 0, title = NULL, bootstrap = F, theme = NULL,
+                                         wellPanel(style = "background-color: #ffffff; overflow-y:scroll; max-height: 750px;",
+                                                   p("NanoTail - Interactive exploration of polyA lengths estimations")))
+                                ),
         shinydashboard::tabItem(tabName = "basicInfo",
                                 infoBoxOutput("numberOfSamples"),
                                 infoBoxOutput("numberOfTranscripts"),
@@ -170,26 +168,48 @@ nanoTailApp <- function(summary_table,polya_table) {
         shinydashboard::tabItem(tabName = "global_distr",
                                 h2("Global distribution of tails"),
                                 fluidRow(
-                                  column(4),
-                                  column(6,plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4))
+                                  box(),
+                                  box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE)
                                 )),
         shinydashboard::tabItem(tabName = "boxplots",
                                 fluidRow(
-                                  box(DT::dataTableOutput('transcripts_table',width = "40%")),
-                                  box(plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4))
+                                  box(DT::dataTableOutput('transcripts_table',height = 350),collapsible = TRUE,height = '100%'),
+                                  tabBox(title = "per transcript plots",id="tabset1", height="500px",
+                                         tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
+                                         tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4))
+                                )
+                                )),
+        shinydashboard::tabItem(tabName = "diff_exp",
+                                fluidRow(
+                                  box(uiOutput("condition1UI"),
+                                      uiOutput("condition2UI"),
+                                      actionButton("compute_diff_exp",
+                                                   HTML("Compute Differential Expression using Binomial Test"),
+                                                   icon = icon("spinner"))
+                                      ),
+                                  box(DT::dataTableOutput('diff_exp_table'))
                                 ),
                                 fluidRow(
-                                  box(),
-                                  box(plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4))
+                                  box(plotly::plotlyOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE),
+                                  box(plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE),
+                                  box(plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE)
                                 )
-        ))))
+        )
+        )))
 
 
 
   shinyApp(ui = nanotail_shiny_ui, server = function(input, output) {
 
 
-    output$transcripts_table = DT::renderDataTable(summary_table, server = TRUE, selection='single')
+    values <- reactiveValues()
+    values$polya_table <- polya_table
+    values$summary_table <- summary_table
+
+
+
+    output$transcripts_table = DT::renderDataTable(summary_table, server = TRUE, selection='single',options = list(dom = 'ftip'),fillContainer=TRUE)
+    output$diff_exp_table = DT::renderDataTable(values$diffexp, server = TRUE, selection='single')
 
 
     output$polya_boxplot = plotly::renderPlotly({
@@ -197,33 +217,17 @@ nanoTailApp <- function(summary_table,polya_table) {
       selected_row <- input$transcripts_table_rows_selected
       selected_transcript = summary_table[selected_row,]$transcript
       data_transcript = data_transcript()
-      transcripts_boxplot <- ggplot2::ggplot(data_transcript,ggplot2::aes_string(x=input$groupingFactor,y="polya_length")) + ggplot2::geom_boxplot()  + ggplot2::ggtitle(selected_transcript)
-      if (input$reverse) {
-        transcripts_boxplot <- transcripts_boxplot + ggplot2::scale_colour_brewer(palette = input$col_palette,direction=-1)
-      }
-      else {
-        transcripts_boxplot <- transcripts_boxplot + ggplot2::scale_colour_brewer(palette = input$col_palette)
-      }
-      #if (input$split_replicates == TRUE) {
-      #  transcripts_boxplot <- transcripts_boxplot  + ggplot2::facet_wrap(. ~ replicate)
-      #}
-      plotly::ggplotly(transcripts_boxplot)
+      polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript)
+      plotly::ggplotly(polya_boxplot)
 
     })
 
     output$polya_global = plotly::renderPlotly({
       #selected_row <- input$table_rows_selected
       #ggplot(polyA_all,aes(x=polya_length,color=group)) + geom_density(size=1,aes(y=..ndensity..)) + scale_x_continuous(limits=c(0,128)) + theme_bw()
-      global_distribution_plot <- ggplot2::ggplot(polya_table,ggplot2::aes_string(x="polya_length",color=input$groupingFactor)) + ggplot2::geom_density(size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::scale_x_continuous(limits=c(0,128)) + ggplot2::theme_bw()
-      if (input$reverse) {
-        global_distribution_plot <- global_distribution_plot + ggplot2::scale_colour_brewer(palette = input$col_palette,direction=-1)
-      }
-      else {
-        global_distribution_plot <- global_distribution_plot + ggplot2::scale_colour_brewer(palette = input$col_palette)
-      }
-      #if (input$split_replicates == TRUE) {
-      #  transcripts_boxplot <- transcripts_boxplot  + ggplot2::facet_wrap(. ~ replicate)
-      #}
+
+      global_distribution_plot <- plot_polya_distribution(polya_data = polya_table,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse)
+
       plotly::ggplotly(global_distribution_plot)
 
     })
@@ -234,17 +238,21 @@ nanoTailApp <- function(summary_table,polya_table) {
       selected_transcript = summary_table[selected_row,]$transcript
       data_transcript = data_transcript()
       #ggplot(polyA_all,aes(x=polya_length,color=group)) + geom_density(size=1,aes(y=..ndensity..)) + scale_x_continuous(limits=c(0,128)) + theme_bw()
-      transcript_distribution_plot <- ggplot2::ggplot(data_transcript,ggplot2::aes_string(x="polya_length",color=input$groupingFactor)) + ggplot2::geom_density(size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::scale_x_continuous(limits=c(0,128)) + ggplot2::theme_bw()
-      if (input$reverse) {
-        transcript_distribution_plot <- transcript_distribution_plot + ggplot2::scale_colour_brewer(palette = input$col_palette,direction=-1)
-      }
-      else {
-        transcript_distribution_plot <- transcript_distribution_plot + ggplot2::scale_colour_brewer(palette = input$col_palette)
-      }
-      #if (input$split_replicates == TRUE) {
-      #  transcripts_boxplot <- transcripts_boxplot  + ggplot2::facet_wrap(. ~ replicate)
-      #}
+      transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse)
       plotly::ggplotly(transcript_distribution_plot)
+
+    })
+
+    output$condition1UI <- renderUI({
+      group_factor = input$groupingFactor
+      selectInput("condition1_diff_exp","Condition 1",choices=levels(polya_table[[group_factor]]),selected = levels(polya_table[[group_factor]])[1])
+      #selectInput("condition2_diff_exp","Condition 2",choices=levels(polya_table[[group_factor]]),selected = levels(levels(polya_table[[group_factor]])[2]))
+
+    })
+    output$condition2UI <- renderUI({
+      group_factor = input$groupingFactor
+      #selectInput("condition1_diff_exp","Condition 1",choices=levels(polya_table[[group_factor]]),selected = levels(polya_table[[group_factor]])[1])
+      selectInput("condition2_diff_exp","Condition 2",choices=levels(polya_table[[group_factor]]),selected = levels(levels(polya_table[[group_factor]])[2]))
 
     })
 
@@ -257,6 +265,7 @@ nanoTailApp <- function(summary_table,polya_table) {
 
       data_transcript
     })
+
 
 
     output$Colorblind <- renderUI({
@@ -285,38 +294,57 @@ nanoTailApp <- function(summary_table,polya_table) {
 
     output$numberOfAllReads <- renderInfoBox({
       infoBox(
-        "Reads analyzed ", processing_statistics$number_all_reads, icon = icon("dna"),
+        "Reads analyzed ", processing_statistics$number_all_reads, icon = icon("stream"),
         color = "black"
       )
     })
 
     output$numberOfPassReads <- renderInfoBox({
       infoBox(
-        "Reads passing filters ", processing_statistics$number_pass_reads, icon = icon("dna"),
+        "Reads passing filters ", processing_statistics$number_pass_reads, icon = icon("check"),
         color = "green"
       )
     })
 
     output$numberOfAdapterReads <- renderInfoBox({
       infoBox(
-        "Adapter reads ", processing_statistics$number_adapter_reads, icon = icon("dna"),
+        "Adapter reads ", processing_statistics$number_adapter_reads, icon = icon("times"),
         color = "red"
       )
     })
 
     output$numberOfReadLoadFailedReads <- renderInfoBox({
       infoBox(
-        "Reads failed to load ", processing_statistics$number_read_load_failed_reads, icon = icon("dna"),
+        "Reads failed to load ", processing_statistics$number_read_load_failed_reads, icon = icon("times"),
         color = "red"
       )
     })
 
     output$numberOfNoregionReads <- renderInfoBox({
       infoBox(
-        "NoRegion reads ", processing_statistics$number_noregion_reads, icon = icon("dna"),
+        "NoRegion reads ", processing_statistics$number_noregion_reads, icon = icon("times"),
         color = "red"
       )
     })
+
+
+    observeEvent(input$compute_diff_exp,
+                 {
+                   withProgress(message="Computing Differential epxression using binomial test...",
+                                detail = "This step can take a little while",
+                                value = 0,{
+                                  print(input$condition1_diff_exp)
+                                  print(input$condition2_diff_exp)
+                                  print(input$groupingFactor)
+                                  print("summarizing")
+                                  values$polya_table_summarized <- summarize_polya(values$polya_table,summary_factors = c(input$groupingFactor))
+                                  print("diffexp")
+
+                                  values$diffexp <- calculate_diff_exp_binom(values$polya_table_summarized,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+                                  values$condition1 <- input$condition1_diff_exp
+                                  values$condition2 <- input$condition2_diff_exp
+                                })
+                 })
 
 
   })

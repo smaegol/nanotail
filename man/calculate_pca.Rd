@@ -2,13 +2,13 @@
 % Please edit documentation in R/polya_stats.R
 \name{calculate_pca}
 \alias{calculate_pca}
-\title{Title}
+\title{Calculates PCA using median polya lengths per transcript}
 \usage{
-calculate_pca(polya_data_summarized)
+calculate_pca(polya_data_summarized, parameter = "polya_median")
 }
 \arguments{
 \item{polya_data_summarized}{}
 }
 \description{
-Title
+Calculates PCA using median polya lengths per transcript
 }

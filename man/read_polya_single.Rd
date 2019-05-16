@@ -4,7 +4,7 @@
 \alias{read_polya_single}
 \title{Read Single Nanopolish polyA predcitions from file}
 \usage{
-read_polya_single(polya_path, ensembl = TRUE)
+read_polya_single(polya_path, ensembl = TRUE, sample_name = NA)
 }
 \arguments{
 \item{polya_path}{\itemize{
@@ -15,12 +15,12 @@ read_polya_single(polya_path, ensembl = TRUE)
 \item are contig names ENSEMBL-compliant
 }}
 
-\item{group_name}{\itemize{
-\item group
-}}
-
 \item{sample_name}{\itemize{
 \item sample name
+}}
+
+\item{group_name}{\itemize{
+\item group
 }}
 
 \item{batch}{\itemize{

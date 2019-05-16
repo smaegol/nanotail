@@ -26,15 +26,12 @@ annotate_with_annotables <- function(polya_data,genome) {
          call. = FALSE)
   }
 
-  assert_that(has_rows(polya_data),msg = "Empty data frame provided as an input (polza?data). Please provide valid input")
+  assert_that(has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   tx_to_gene_table = paste0(genome,"_tx2gene")
   print(tx_to_gene_table)
-  polya_data_annotated <-  polya_data %>% dplyr::inner_join(eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
+  polya_data_annotated <-  polya_data %>% dplyr::left_join(eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
 
   return(polya_data_annotated)
   }
 
-
-genome_test = "grch38"
-genome_test2<-paste0("annotables::",genome_test)

@@ -10,7 +10,7 @@
 #'
 #' @return a [tibble][tibble::tibble-package]#'
 #' @examples
-read_polya_single <- function(polya_path, ensembl = TRUE) {
+read_polya_single <- function(polya_path, ensembl = TRUE, sample_name = NA) {
     # required asserts
     #cmd_args <- commandArgs(TRUE)
 
@@ -26,7 +26,14 @@ read_polya_single <- function(polya_path, ensembl = TRUE) {
 
     message(paste0("Loading data from ",polya_path))
 
-    polya_data <- data.table::fread(polya_path, data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE) %>% dplyr::as_tibble()
+
+    # based on https://stackoverflow.com/questions/48838222/data-tablefread-an-integer64-type-manually-override-colclass-for-only-one-c
+    # fixes the bug causing problems when reading using read_polya_multiple and no all of the individual data.tables
+    # has integer64 for column "position"
+    colCls <- sapply(fread(polya_path, nrows=0), class)
+    colCls[c("position")] <- "integer64"
+
+    polya_data <- data.table::fread(polya_path, integer64 = "numeric", data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE) %>% dplyr::as_tibble()
     polya_data %<>% dplyr::mutate(polya_length = round(polya_length))
     # change first column name
     colnames(polya_data)[1] <- "read_id"
@@ -34,12 +41,17 @@ read_polya_single <- function(polya_path, ensembl = TRUE) {
     # ENSMUST00000052902.8|Gm9797|k|5db8d4b0-ba94-40b5-a3f7-54afd85f51e1_0_ENSMUSG00000045455.8 if ENSEMBL based contig names - read ensembl IDS,
     # transcript names
     if (ensembl == TRUE) {
-        transcript_names <- gsub(".*?\\|(.*?)\\|.\\|.*", "\\1", polya_data$contig)
+        transcript_names <- gsub(".*?\\|.*?\\|.*?\\|.*?\\|.*?\\|(.*?)\\|.*", "\\1", polya_data$contig)
         polya_data$transcript <- transcript_names
-        ensembl_transcript_ids <- gsub("^(.*)\\|.*\\|.\\|.*", "\\1", polya_data$contig)
+        ensembl_transcript_ids <- gsub("^(.*?)\\|.*\\|.*", "\\1", polya_data$contig)
         ensembl_transcript_ids_short <- gsub("(.*)\\..", "\\1", ensembl_transcript_ids)
         polya_data$ensembl_transcript_id_full <- ensembl_transcript_ids
         polya_data$ensembl_transcript_id_short <- ensembl_transcript_ids_short
+    }
+
+    if(!is.na(sample_name)) {
+      message("sample_name is not NA")
+      polya_data$sample_name = sample_name
     }
 
     return(polya_data)
@@ -87,7 +99,7 @@ remove_failed_reads <- function(polya_data) {
          call. = FALSE)
   }
 
-  assert_that(has_rows(polya_data),msg = "Empty data frame provided as an input (polza?data). Please provide valid input")
+  assert_that(has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   filtered_polya_data <- polya_data %>% dplyr::filter(qc_tag=='PASS')
   return(filtered_polya_data)

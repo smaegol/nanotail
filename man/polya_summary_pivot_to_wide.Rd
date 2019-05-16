@@ -2,7 +2,7 @@
 % Please edit documentation in R/polya_stats.R
 \name{polya_summary_pivot_to_wide}
 \alias{polya_summary_pivot_to_wide}
-\title{title}
+\title{title probably top be removed}
 \usage{
 polya_summary_pivot_to_wide(polya_data)
 }
@@ -10,5 +10,5 @@ polya_summary_pivot_to_wide(polya_data)
 \item{polya_data}{}
 }
 \description{
-title
+title probably top be removed
 }

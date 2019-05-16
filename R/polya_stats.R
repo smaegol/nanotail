@@ -232,7 +232,7 @@ summarize_polya <- function(polya_data,summary_factors = c("group")) {
     )
   return(polya_data_summarized)
 }
-#' title
+#' title probably top be removed
 #'
 #' @param polya_data
 #'
@@ -260,7 +260,7 @@ polya_summary_pivot_to_wide <- function(polya_data) {
 }
 
 
-#' Title
+#' Calculates PCA using median polya lengths per transcript
 #'
 #' @param polya_data_summarized
 #'
@@ -268,10 +268,21 @@ polya_summary_pivot_to_wide <- function(polya_data) {
 #' @export
 #'
 #' @examples
-calculate_pca <- function(polya_data_summarized) {
+calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 
+  polya_data_summarized %<>% dplyr::select(transcript,sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
+  polya_data_summarized[is.na(polya_data_summarized)] <- 0
+  transcript_names <- polya_data_summarized[,1]
+  polya_data_summarized_t<-t(polya_data_summarized[,-1])
+  colnames(polya_data_summarized_t) <- transcript_names
+  pca.test <- prcomp(polya_data_summarized_t,center=T,scale=T)
 
+  return(pca.test)
 }
+
+
+
+
 
 #' Title
 #'
@@ -292,3 +303,58 @@ calculate_processing_statistics <- function(polya_data) {
   return_list$number_pass_reads <- polya_data %>% dplyr::filter(qc_tag=='PASS') %>% nrow()
   return (return_list)
 }
+
+
+#' Title
+#'
+#' @param polya_data_summarized
+#' @param grouping_factor
+#' @param condition1
+#' @param condition2
+#' @param alpha
+#'
+#' @return
+#' @export
+#'
+#' @examples
+calculate_diff_exp_binom <- function(polya_data_summarized,grouping_factor,condition1,condition2,alpha=0.05) {
+
+
+
+  if (missing(polya_data_summarized)) {
+    stop("Summariyed polyA data are missing. Please provide a valid polya_data_summarized argument",
+         call. = FALSE)
+  }
+
+  if (missing(grouping_factor)) {
+    stop("Grouping factor is missing. Please specify one",
+         call. = FALSE)
+  }
+
+  assertthat::assert_that(grouping_factor %in% colnames(polya_data_summarized),msg=paste0(grouping_factor," is not a column of input dataset"))
+
+
+  polyA_data_counts_summarized<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(grouping_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread(!!rlang::sym(grouping_factor),counts_sum)
+
+  polyA_data_counts_summarized[is.na(polyA_data_counts_summarized)] <- 0
+
+  binom_test_pvalues<-edgeR::binomTest(y1=polyA_data_counts_summarized[[condition1]],y2=polyA_data_counts_summarized[[condition2]],n1=sum(polyA_data_counts_summarized[[condition1]]),n2=sum(polyA_data_counts_summarized[[condition2]]))
+  binom_test_adjusted_pvalues <- p.adjust(binom_test_pvalues,method="BH")
+
+  binom_test_results <-
+    data.frame(transcript = polyA_data_counts_summarized$transcript,
+               pvalue = binom_test_pvalues,
+               padj = binom_test_adjusted_pvalues) %>%
+    dplyr::left_join(polyA_data_counts_summarized) %>%
+    dplyr::mutate(fold_change = (!! rlang::sym(condition2))/(!! rlang::sym(condition1))) %>%
+    #dplyr::mutate_(fold_change = ifelse((condition2 > 0 & condition1 > 0), fold_change, 0)) %>%
+    dplyr::mutate(significance = ifelse(padj < alpha, paste0("FDR<", alpha), "NotSig")) %>%
+    dplyr::mutate(mean_expr = ((!!rlang::sym(condition1)) + (!!rlang::sym(condition2)))/2) %>%
+    dplyr::arrange(padj)
+
+  return(binom_test_results)
+
+}
+
+
+
