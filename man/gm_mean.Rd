@@ -7,14 +7,17 @@
 gm_mean(x, na.rm = TRUE)
 }
 \arguments{
-\item{x}{\itemize{
-\item input vector
-}}
+\item{x}{input vector}
 
-\item{na.rm}{\itemize{
-\item should NA values be removed?
-}}
+\item{na.rm}{should NA values be removed?}
+}
+\value{
+geometric mean of values provided as an input
 }
 \description{
 Calculates geometric mean
+}
+\examples{
+a <- rnorm(100,33,5)
+gm_mean(a)
 }

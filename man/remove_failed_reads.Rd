@@ -2,16 +2,16 @@
 % Please edit documentation in R/read_polyA_data.R
 \name{remove_failed_reads}
 \alias{remove_failed_reads}
-\title{Title}
+\title{Removes reads which failed during Nanopolish polya processing}
 \usage{
 remove_failed_reads(polya_data)
 }
 \arguments{
-\item{polya_data}{}
+\item{polya_data}{output table from \code{read_polya_single} or \code{read_polya_multiple}}
 }
 \value{
-a \link[tibble:tibble-package]{tibble}
+a \link[tibble:tibble-package]{tibble} with only reads having qc_tag=='PASS'
 }
 \description{
-Title
+Convenient function to quickly remove all reads failing during nanopolish polya processing
 }

@@ -5,10 +5,10 @@
 \title{Calculate basic statistics}
 \usage{
 calculate_polya_stats(polya_data, min_reads = 0,
-  grouping_factor = "group")
+  grouping_factor = "group", condition1 = NA, condition2 = NA)
 }
 \arguments{
-\item{min_reads}{}
+\item{condition2}{}
 }
 \value{
 tibble with statistics

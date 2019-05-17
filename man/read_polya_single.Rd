@@ -2,34 +2,26 @@
 % Please edit documentation in R/read_polyA_data.R
 \name{read_polya_single}
 \alias{read_polya_single}
-\title{Read Single Nanopolish polyA predcitions from file}
+\title{Read Single Nanopolish polyA preditions from file}
 \usage{
-read_polya_single(polya_path, ensembl = TRUE, sample_name = NA)
+read_polya_single(polya_path, gencode = TRUE, sample_name = NA)
 }
 \arguments{
-\item{polya_path}{\itemize{
-\item path to Nanopolish output
-}}
+\item{polya_path}{path to nanopolish output file}
 
-\item{ensembl}{\itemize{
-\item are contig names ENSEMBL-compliant
-}}
+\item{gencode}{are contig names GENCODE-compliant.
+Can get transcript names and ensembl_transcript IDs if reads were mapped for example to Gencode reference transcriptome}
 
-\item{sample_name}{\itemize{
-\item sample name
-}}
-
-\item{group_name}{\itemize{
-\item group
-}}
-
-\item{batch}{\itemize{
-\item batch (or other additional variable)
-}}
+\item{sample_name}{sample name (optional), provided as a string.
+If specified will be included as an additional column sample_name.}
 }
 \value{
-a \link[tibble:tibble-package]{tibble}#'
+a \link[tibble:tibble-package]{tibble} with polya predictions
 }
 \description{
-Read Single Nanopolish polyA predcitions from file
+This is the basic function used to import output from \code{nanopolish polya} to R
 }
+\seealso{
+Other read_data: \code{\link{read_polya_multiple}}
+}
+\concept{read_data}

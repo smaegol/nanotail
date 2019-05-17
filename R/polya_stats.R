@@ -2,12 +2,14 @@
 #'
 #' @param polya_data
 #' @param min_reads
+#' @param grouping_factor
+#' @param condition1
+#' @param condition2
 #'
 #' @return tibble with statistics
 #' @export
 #'
-#' @examples
-calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "group") {
+calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "group",condition1=NA,condition2=NA) {
 
 
 
@@ -18,6 +20,27 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
 
   assert_that(is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
 
+  assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
+
+  # if grouping factor has more than two levels
+  if (length(levels(polya_data[[grouping_factor]]))>2) {
+    if(is.na(condition1) && is.na(condition2)) {
+      #throw error when no conditions for comparison are specified
+      stop(paste0("grouping_factor ",grouping_factor," has more than 2 levels. Please specify condtion1 and condition2 to select comparison pairs"))
+    }
+    else {
+      # filter input data leaving only specified conditions, dropping other factor levels
+      polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(grouping_factor) %in% c(condition1,condition2)) %>% dplyr::mutate() %>% droplevels()
+    }
+  }
+  else if (length(levels(polya_data[[grouping_factor]]))==1) {
+    stop("Only 1 level present for grouping factor. Choose another groping factor for comparison")
+  }
+  else {
+    condition1 = levels(polya_data[[grouping_factor]])[1]
+    condition2 = levels(polya_data[[grouping_factor]])[2]
+  }
+
   ### TBD
   # batch - make conditional (testing as formula??)
   # remove batch for now as it is raising some Evaluation error: contrasts can be applied only to factors with 2 or more levels. errors
@@ -27,6 +50,7 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
   #test_formula = reformulate(grouping_factor,polya_length)
 
   # leave only those tanscripts which were identified in all conditions
+
   polya_data_complete_cases <-
     polya_data %>% dplyr::group_by(.dots = c("transcript", grouping_factor)) %>% dplyr::add_count() %>% dplyr::filter(n > min_reads) %>% dplyr::slice(1) %>%
     dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::add_count() %>% dplyr::filter(nn > 1)
@@ -61,20 +85,20 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
       p.value,
       p.value_ks
     ) %>% dplyr::mutate(group_var = paste(group, variable, sep = "_")) %>% dplyr::select(-c(group,
-                                                                                     variable)) %>% tidyr::spread(group_var, wart) %>% dplyr::rename(p.value = wt_p.value,
-                                                                                                                                       p.value_ks = wt_p.value_ks) %>% dplyr::select(-mut_p.value) %>%
-    dplyr::mutate(fold_change = wt_polya_mean / mut_polya_mean) %>% dplyr::select(
+                                                                                     variable)) %>% tidyr::spread(group_var, wart) %>% dplyr::rename(p.value = !!rlang::sym(paste0(condition1,"_p.value")),
+                                                                                                                                       p.value_ks = !!rlang::sym(paste0(condition1,"_p.value_ks"))) %>% dplyr::select(- !!rlang::sym(paste0(condition2,"_p.value"))) %>%
+    dplyr::mutate(fold_change = !!rlang::sym(paste0(condition1,"_polya_mean")) / !!rlang::sym(paste0(condition2,"_polya_mean"))) %>% dplyr::select(
       transcript,
-      wt_counts,
-      mut_counts,
-      wt_polya_mean,
-      mut_polya_mean,
-      wt_polya_gm_mean,
-      mut_polya_gm_mean,
-      wt_polya_median,
-      mut_polya_median,
-      wt_polya_sd,
-      mut_polya_sd,
+      !!rlang::sym(paste0(condition1,"_counts")),
+      !!rlang::sym(paste0(condition2,"_counts")),
+      !!rlang::sym(paste0(condition1,"_polya_mean")),
+      !!rlang::sym(paste0(condition2,"_polya_mean")),
+      !!rlang::sym(paste0(condition1,"_polya_gm_mean")),
+      !!rlang::sym(paste0(condition2,"_polya_gm_mean")),
+      !!rlang::sym(paste0(condition1,"_polya_median")),
+      !!rlang::sym(paste0(condition2,"_polya_median")),
+      !!rlang::sym(paste0(condition1,"_polya_sd")),
+      !!rlang::sym(paste0(condition2,"_polya_sd")),
       fold_change_means = fold_change,
       p.value,
       p.value_ks
@@ -206,6 +230,7 @@ calculate_polya_stats_glm <- function(polya_data, min_reads = 0, grouping_factor
 #' Title
 #'
 #' @param polya_data
+#' @param summary_factors
 #'
 #' @return long-format tibble with per-transcript statistics for each sample
 #' @export
@@ -263,6 +288,7 @@ polya_summary_pivot_to_wide <- function(polya_data) {
 #' Calculates PCA using median polya lengths per transcript
 #'
 #' @param polya_data_summarized
+#' @param parameter
 #'
 #' @return
 #' @export
@@ -284,15 +310,35 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 
 
 
-#' Title
+#' Get information about nanopolish processing
 #'
-#' @param polya_data
+#' Process the information returned by \code{nanopolish polya} in the \code{qc_tag} column
 #'
-#' @return
+#' @param polya_data A data.frame or tibble containig unfiltered polya output from Nanopolish,
+#' best read with \code{read_polya_single} or \code{read_polya_multiple}
+#' @param sample string defining a sample to show, leave empty to show all samples
+#'
+#' @return A list with elements:
+#' \itemize{
+#' \item number_all_reads - sum of all reads processed
+#' \item number_adapter_reads - number of reads marked as ADAPTER
+#' \item number_noregion_reads - number of reads marked as NOREGION
+#' \item number_number_read_load_failed_reads - number of reads marked as READ_FAILED_LOAD
+#' \item number_number_suffclip_reads - number of reads marked as SUFFCLIP
+#' \item number_number_pass_reads - number of reads marked as PASS
+#' }
 #' @export
 #'
 #' @examples
-calculate_processing_statistics <- function(polya_data) {
+get_nanopolish_processing_info <- function(polya_data,sample=NA) {
+
+  if(!is.na(sample)) {
+    message(paste0("Will process only ",sample," sample"))
+    polya_data <- polya_data %>% dplyr::filter(sample_name==sample)
+  }
+
+  # make sure that single reads are shown
+  polya_data <- polya_data %>% dplyr::group_by(read_id) %>% dplyr::slice(1)
 
   return_list <- list()
   return_list$number_all_reads <- nrow(polya_data)
@@ -305,24 +351,31 @@ calculate_processing_statistics <- function(polya_data) {
 }
 
 
-#' Title
+#' Performs differential expression analysis
 #'
-#' @param polya_data_summarized
-#' @param grouping_factor
-#' @param condition1
-#' @param condition2
-#' @param alpha
+#' Uses counts for each identified transcript to calculate differential expression between specified groups.
+#' This function is a wrapper for \code{\link[edgeR]{binomTest}} from \code{edgeR} package
 #'
-#' @return
+#'
+#' @param polya_data polya_data tibble
+#' @param grouping_factor name of column containing factor with groups for comparison
+#' @param condition1 first condition to compare
+#' @param condition2 second condition to compare
+#' @param alpha threshold for a pvalue, to treat the result as significant (default = 0.05)
+#' @param summarized_input is input table already summarized?
+#'
+#' @return a tibble with differential expression results
 #' @export
 #'
+#' @seealso \link[edgeR]{binomTest}
+#'
 #' @examples
-calculate_diff_exp_binom <- function(polya_data_summarized,grouping_factor,condition1,condition2,alpha=0.05) {
+calculate_diff_exp_binom <- function(polya_data,grouping_factor,condition1,condition2,alpha=0.05,summarized_input=FALSE) {
 
 
 
-  if (missing(polya_data_summarized)) {
-    stop("Summariyed polyA data are missing. Please provide a valid polya_data_summarized argument",
+  if (missing(polya_data)) {
+    stop("PolyA data are missing. Please provide a valid polya_data argument",
          call. = FALSE)
   }
 
@@ -331,9 +384,15 @@ calculate_diff_exp_binom <- function(polya_data_summarized,grouping_factor,condi
          call. = FALSE)
   }
 
-  assertthat::assert_that(grouping_factor %in% colnames(polya_data_summarized),msg=paste0(grouping_factor," is not a column of input dataset"))
+  assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
 
-
+  if (summarized_input){
+    polya_data_summarized <- polya_data
+  }
+  else{
+    polya_data_summarized <- summarize_polya(polya_data,summary_factors = grouping_factor)
+  }
+  #sum counts for all samples in given group
   polyA_data_counts_summarized<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(grouping_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread(!!rlang::sym(grouping_factor),counts_sum)
 
   polyA_data_counts_summarized[is.na(polyA_data_counts_summarized)] <- 0

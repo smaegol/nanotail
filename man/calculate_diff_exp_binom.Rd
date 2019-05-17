@@ -2,14 +2,31 @@
 % Please edit documentation in R/polya_stats.R
 \name{calculate_diff_exp_binom}
 \alias{calculate_diff_exp_binom}
-\title{Title}
+\title{Performs differential expression analysis}
 \usage{
-calculate_diff_exp_binom(polya_data_summarized, grouping_factor,
-  condition1, condition2, alpha = 0.05)
+calculate_diff_exp_binom(polya_data, grouping_factor, condition1,
+  condition2, alpha = 0.05, summarized_input = FALSE)
 }
 \arguments{
-\item{alpha}{}
+\item{polya_data}{polya_data tibble}
+
+\item{grouping_factor}{name of column containing factor with groups for comparison}
+
+\item{condition1}{first condition to compare}
+
+\item{condition2}{second condition to compare}
+
+\item{alpha}{threshold for a pvalue, to treat the result as significant (default = 0.05)}
+
+\item{summarized_input}{is input table already summarized?}
+}
+\value{
+a tibble with differential expression results
 }
 \description{
-Title
+Uses counts for each identified transcript to calculate differential expression between specified groups.
+This function is a wrapper for \code{\link[edgeR]{binomTest}} from \code{edgeR} package
+}
+\seealso{
+\link[edgeR]{binomTest}
 }

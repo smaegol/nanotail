@@ -4,13 +4,6 @@
 # TODO allow statistics on more than 2 levels of factor (anova?)
 # TODO Add withProgress
 
-
-
-
-
-
-
-
 # wrapper for NanoTail Shiny interface
 #' Title
 #'
@@ -20,8 +13,7 @@
 #' @return
 #' @export
 #'
-#' @examples
-nanoTailApp <- function(summary_table,polya_table) {
+nanoTailApp <- function(polya_table,summary_table) {
 
   if ( !requireNamespace('shiny',quietly = TRUE) ) {
     stop("NanoTail requires 'shiny'. Please install it using
@@ -37,32 +29,35 @@ nanoTailApp <- function(summary_table,polya_table) {
   }
 
   #check if parameters are provided
-  if (missing(summary_table)) {
-    stop("The statistics summary table  (argument summary_table) is missing",
-         call. = FALSE)
-  }
+  #if (missing(summary_table)) {
+  #  stop("The statistics summary table  (argument summary_table) is missing",
+  #       call. = FALSE)
+  #}
 
   if (missing(polya_table)) {
     stop("The polyA lengths table  (argument polya_table) is missing",
          call. = FALSE)
   }
 
-  assert_that(has_rows(summary_table),msg = "Empty data frame provided as an input (summary_table). Please provide the correct summary_table")
-  assert_that(has_rows(summary_table),msg = "Empty data frame provided as an input (polya_table). Please provide the correct polya_table")
+  #assert_that(has_rows(summary_table),msg = "Empty data frame provided as an input (summary_table). Please provide the correct summary_table")
+  assert_that(has_rows(polya_table),msg = "Empty data frame provided as an input (polya_table). Please provide the correct polya_table")
+
+  # Calculate processing statistics
+  # TODO Move to reactive values
+  print("processing_stats")
+  processing_statistics = get_nanopolish_processing_info(polya_table)
+  print("filter")
+  #remove failed reads from polya_table before further analysis
+  polya_table_passed <- remove_failed_reads(polya_table)
+
 
   # Convert polya_table to data.table (if required)
   # TODO check if is already datatable or not
-  polya_table <- data.table::data.table(polya_table)
-  data.table::setkey(polya_table,"transcript")
+  polya_table_passed <- data.table::data.table(polya_table_passed)
+  data.table::setkey(polya_table_passed,"transcript")
 
-  # Calculate processing statistics
-  processing_statistics = calculate_processing_statistics(polya_table)
-
-  #remove failed reads from polya_table
-  polya_table <- remove_failed_reads(polya_table)
-
-  number_of_samples = length(levels(polya_table$sample_name))
-  number_of_transcripts = length(levels(as.factor(polya_table$transcript)))
+  number_of_samples = length(levels(polya_table_passed$sample_name))
+  number_of_transcripts = length(levels(as.factor(polya_table_passed$transcript)))
   ## colorpicker based on Zbyszek Pietras Bar Plot app (https://github.com/zetp/Bar_plot_NC/blob/master/app.R)
   ### here is code to make color scale picker (palette picker) UI input
   ### it is taken from shinyWidgets website: https://dreamrs.github.io/shinyWidgets/articles/palette_picker.html
@@ -129,21 +124,11 @@ nanoTailApp <- function(summary_table,polya_table) {
         shinydashboard::menuItem("Global distribution", icon = icon("chart-line-down"), tabName = "global_distr"),
         shinydashboard::menuItem("Per transcript plots", icon = icon("dna"), tabName = "boxplots"),
         shinydashboard::menuItem("Differential expression", icon = icon("dna"), tabName = "diff_exp"),
+        shinydashboard::menuItem("Plot settings", icon = icon("settings"), tabName = "plot_settings"),
         shinydashboard::menuItem("About", tabName = "dashboard", icon = icon("dashboard"))
-      ),selectInput("groupingFactor","Group by",choices=polya_table %>% dplyr::select_if(is.factor) %>% colnames),
-shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
-                  choices = colors_pal, selected = "Set1", width = "100%",
-                  choicesOpt = list(
-                    content = sprintf(
-                      "<div style='width:100%%;padding:5px;border-radius:4px;background:%s;color:%s'>%s</div>",
-                      unname(background_pals), colortext_pals, names(background_pals)
-                    )
-                  )
-      ),
-      uiOutput("Colorblind"),
-      checkboxInput("reverse", "reverse color scale", value = FALSE),
-      sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
-      sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10)
+      ),selectInput("groupingFactor","Group by",choices=polya_table_passed %>% dplyr::select_if(is.factor) %>% colnames),
+      uiOutput("condition1UI"),
+      uiOutput("condition2UI")
 ),
 
     # body definition ---------------------------------------------------------
@@ -156,6 +141,7 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                                                    p("NanoTail - Interactive exploration of polyA lengths estimations")))
                                 ),
         shinydashboard::tabItem(tabName = "basicInfo",
+
                                 infoBoxOutput("numberOfSamples"),
                                 infoBoxOutput("numberOfTranscripts"),
                                 infoBoxOutput("numberOfAllReads"),
@@ -165,6 +151,24 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                                 infoBoxOutput("numberOfNoregionReads")
 
         ),
+        shinydashboard::tabItem(tabName = "plot_settings",
+                                box(
+                                shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
+                                                          choices = colors_pal, selected = "Set1", width = "100%",
+                                                          choicesOpt = list(
+                                                            content = sprintf(
+                                                              "<div style='width:100%%;padding:5px;border-radius:4px;background:%s;color:%s'>%s</div>",
+                                                              unname(background_pals), colortext_pals, names(background_pals)
+                                                            )
+                                                          )
+                                ),
+                                uiOutput("Colorblind"),
+                                checkboxInput("reverse", "reverse color scale", value = FALSE),
+                                sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
+                                sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10),
+                                sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
+                                sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50)
+                                )),
         shinydashboard::tabItem(tabName = "global_distr",
                                 h2("Global distribution of tails"),
                                 fluidRow(
@@ -173,7 +177,10 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                                 )),
         shinydashboard::tabItem(tabName = "boxplots",
                                 fluidRow(
-                                  box(DT::dataTableOutput('transcripts_table',height = 350),collapsible = TRUE,height = '100%'),
+                                  box(actionButton("compute_diff_polya",
+                                                     HTML("Compute Polya statistics"),
+                                                     icon = icon("spinner")),
+                                      DT::dataTableOutput('transcripts_table'),collapsible = TRUE,height = '100%'),
                                   tabBox(title = "per transcript plots",id="tabset1", height="500px",
                                          tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
                                          tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4))
@@ -181,21 +188,17 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                                 )),
         shinydashboard::tabItem(tabName = "diff_exp",
                                 fluidRow(
-                                  box(uiOutput("condition1UI"),
-                                      uiOutput("condition2UI"),
-                                      actionButton("compute_diff_exp",
+                                  box(actionButton("compute_diff_exp",
                                                    HTML("Compute Differential Expression using Binomial Test"),
-                                                   icon = icon("spinner"))
-                                      ),
-                                  box(DT::dataTableOutput('diff_exp_table'))
-                                ),
-                                fluidRow(
-                                  box(plotly::plotlyOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE),
-                                  box(plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE),
-                                  box(plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4),collapsible = TRUE)
-                                )
+                                                   icon = icon("spinner")),
+                                  DT::dataTableOutput('diff_exp_table')),
+                                  tabBox(title = "plots",id="tabset2",height="500px",
+                                    tabPanel("pca_biplot",plotly::plotlyOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
+                                    tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
+                                    tabPanel("counts_plot",plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4))
+                                  )
         )
-        )))
+        ))))
 
 
 
@@ -203,16 +206,17 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
 
 
     values <- reactiveValues()
-    values$polya_table <- polya_table
-    values$summary_table <- summary_table
+    values$polya_table <- polya_table_passed
 
 
 
-    output$transcripts_table = DT::renderDataTable(summary_table, server = TRUE, selection='single',options = list(dom = 'ftip'),fillContainer=TRUE)
+
+    output$transcripts_table = DT::renderDataTable(values$summary_table, server = TRUE, selection='single',options = list(dom = 'ftip'))
     output$diff_exp_table = DT::renderDataTable(values$diffexp, server = TRUE, selection='single')
 
 
     output$polya_boxplot = plotly::renderPlotly({
+      summary_table = values$summary_table
       #selected_row <- input$table_rows_selected
       selected_row <- input$transcripts_table_rows_selected
       selected_transcript = summary_table[selected_row,]$transcript
@@ -226,13 +230,15 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
       #selected_row <- input$table_rows_selected
       #ggplot(polyA_all,aes(x=polya_length,color=group)) + geom_density(size=1,aes(y=..ndensity..)) + scale_x_continuous(limits=c(0,128)) + theme_bw()
 
-      global_distribution_plot <- plot_polya_distribution(polya_data = polya_table,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse)
+      global_distribution_plot <- plot_polya_distribution(polya_data = polya_table_passed,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse)
 
       plotly::ggplotly(global_distribution_plot)
 
     })
 
     output$polya_distribution = plotly::renderPlotly({
+      summary_table = values$summary_table
+
       #selected_row <- input$table_rows_selected
       selected_row <- input$transcripts_table_rows_selected
       selected_transcript = summary_table[selected_row,]$transcript
@@ -245,28 +251,42 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
 
     output$condition1UI <- renderUI({
       group_factor = input$groupingFactor
-      selectInput("condition1_diff_exp","Condition 1",choices=levels(polya_table[[group_factor]]),selected = levels(polya_table[[group_factor]])[1])
+      selectizeInput("condition1_diff_exp","Condition 1",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[1])
       #selectInput("condition2_diff_exp","Condition 2",choices=levels(polya_table[[group_factor]]),selected = levels(levels(polya_table[[group_factor]])[2]))
 
     })
     output$condition2UI <- renderUI({
       group_factor = input$groupingFactor
       #selectInput("condition1_diff_exp","Condition 1",choices=levels(polya_table[[group_factor]]),selected = levels(polya_table[[group_factor]])[1])
-      selectInput("condition2_diff_exp","Condition 2",choices=levels(polya_table[[group_factor]]),selected = levels(levels(polya_table[[group_factor]])[2]))
+      selectizeInput("condition2_diff_exp","Condition 2",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[2])
 
     })
 
     data_transcript <- shiny::reactive({
+      summary_table = values$summary_table
+
       selected_row <- input$transcripts_table_rows_selected
       selected_transcript = summary_table[selected_row,]$transcript
       message(selected_transcript)
-      data_transcript = subset(polya_table, transcript==selected_transcript)
+      data_transcript = subset(polya_table_passed, transcript==selected_transcript)
       data_transcript %<>% dplyr::mutate(replicate = gsub(".*(.)$","\\1", sample_name))
 
       data_transcript
     })
 
 
+    output$counts_plot <- plotly::renderPlotly({
+
+      # minimal value of counts for a transcript to show, defined as a 25% quantile of all counts
+      #min_counts_quantile =  quantile(values$polya_table_summarized[["counts"]],na.rm=TRUE,probs=c(25, 99)/100)[1]
+      # maximal value of counts for a transcript to show, defined as a 95% quantile of all counts, as usually most abundant transcripts locate further from the main body
+      #max_counts_quantile =  quantile(values$polya_table_summarized[["counts"]],na.rm=TRUE,probs=c(25, 99)/100)[2]
+      counts_scatter_plot <- plot_counts_scatter(polya_data = values$polya_table_summarized,groupingFactor = input$groupingFactor,color_palette = input$col_palette,reverse_palette = input$reverse,condition1 = input$condition1_diff_exp, condition2 = input$condition2_diff_exp,min_counts = input$counts_scatter_low_value, max_counts = input$counts_scatter_high_value)
+
+      counts_scatter_plot
+
+
+    })
 
     output$Colorblind <- renderUI({
       if(brewer.pal.info %>% subset(rownames(.) == input$col_palette) %>% .$colorblind) {
@@ -340,7 +360,27 @@ shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                                   values$polya_table_summarized <- summarize_polya(values$polya_table,summary_factors = c(input$groupingFactor))
                                   print("diffexp")
 
-                                  values$diffexp <- calculate_diff_exp_binom(values$polya_table_summarized,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+                                  values$diffexp <- calculate_diff_exp_binom(values$polya_table_summarized,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,summarized_input=TRUE)
+                                  values$condition1 <- input$condition1_diff_exp
+                                  values$condition2 <- input$condition2_diff_exp
+                                })
+                 })
+
+
+    observeEvent(input$compute_diff_polya,
+                 {
+                   withProgress(message="Computing polya statistics...",
+                                detail = "This step can take a little while",
+                                value = 0,{
+                                  print(input$condition1_diff_exp)
+                                  print(input$condition2_diff_exp)
+                                  print(input$groupingFactor)
+                                  print("calculating stats")
+                                  condition1 = input$condition1_diff_exp
+                                  condition2 = input$condition2_diff_exp
+
+                                  polya_stats <- calculate_polya_stats(values$polya_table,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+                                  values$summary_table <- polya_stats$summary %>% dplyr::select(transcript,!!rlang::sym(paste0(condition1,"_counts")),!!rlang::sym(paste0(condition2,"_counts")),!!rlang::sym(paste0(condition1,"_polya_median")),!!rlang::sym(paste0(condition2,"_polya_median")),p.value,p.corr)
                                   values$condition1 <- input$condition1_diff_exp
                                   values$condition2 <- input$condition2_diff_exp
                                 })

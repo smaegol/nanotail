@@ -4,15 +4,15 @@
 \alias{nanoTailApp}
 \title{Title}
 \usage{
-nanoTailApp(summary_table, polya_table)
+nanoTailApp(polya_table, summary_table)
 }
 \arguments{
-\item{summary_table}{\itemize{
-\item data frame with summarized polya lengths and statistics per transcript
-}}
-
 \item{polya_table}{\itemize{
 \item data.table object with polyA data for all reads
+}}
+
+\item{summary_table}{\itemize{
+\item data frame with summarized polya lengths and statistics per transcript
 }}
 }
 \description{

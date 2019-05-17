@@ -7,7 +7,7 @@
 summarize_polya(polya_data, summary_factors = c("group"))
 }
 \arguments{
-\item{polya_data}{}
+\item{summary_factors}{}
 }
 \value{
 long-format tibble with per-transcript statistics for each sample

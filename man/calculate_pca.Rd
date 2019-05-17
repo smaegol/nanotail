@@ -7,7 +7,7 @@
 calculate_pca(polya_data_summarized, parameter = "polya_median")
 }
 \arguments{
-\item{polya_data_summarized}{}
+\item{parameter}{}
 }
 \description{
 Calculates PCA using median polya lengths per transcript

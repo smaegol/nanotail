@@ -1,18 +1,21 @@
-#' Read Single Nanopolish polyA predcitions from file
+#' Read Single Nanopolish polyA preditions from file
 #'
-#' @param polya_path - path to Nanopolish output
-#' @param group_name - group
-#' @param sample_name - sample name
-#' @param batch - batch (or other additional variable)
-#' @param ensembl - are contig names ENSEMBL-compliant
+#' This is the basic function used to import output from \code{nanopolish polya} to R
+#'
+#' @param polya_path path to nanopolish output file
+#' @param sample_name sample name (optional), provided as a string.
+#' If specified will be included as an additional column sample_name.
+#' @param gencode are contig names GENCODE-compliant.
+#' Can get transcript names and ensembl_transcript IDs if reads were mapped for example to Gencode reference transcriptome
+#'
+#' @family read_data
 #'
 #' @export
 #'
-#' @return a [tibble][tibble::tibble-package]#'
-#' @examples
-read_polya_single <- function(polya_path, ensembl = TRUE, sample_name = NA) {
+#' @return a [tibble][tibble::tibble-package] with polya predictions
+#'
+read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA) {
     # required asserts
-    #cmd_args <- commandArgs(TRUE)
 
     #check if parameters are provided
     if (missing(polya_path)) {
@@ -22,17 +25,11 @@ read_polya_single <- function(polya_path, ensembl = TRUE, sample_name = NA) {
     assert_that(is_a_non_missing_nor_empty_string(polya_path),msg = "Empty string provided as an input. Please provide a polya_path as a string")
     assert_that(is_existing_file(polya_path),msg=paste("File ",polya_path," not exists",sep=""))
     assert_that(is_non_empty_file(polya_path),msg=paste("File ",polya_path," is empty",sep=""))
-    assert_that(is_a_bool(ensembl),msg="Please provide TRUE/FALSE values for ensembl parameter")
+    assert_that(is_a_bool(gencode),msg="Please provide TRUE/FALSE values for gencode parameter")
 
     message(paste0("Loading data from ",polya_path))
 
-
-    # based on https://stackoverflow.com/questions/48838222/data-tablefread-an-integer64-type-manually-override-colclass-for-only-one-c
-    # fixes the bug causing problems when reading using read_polya_multiple and no all of the individual data.tables
-    # has integer64 for column "position"
-    colCls <- sapply(fread(polya_path, nrows=0), class)
-    colCls[c("position")] <- "integer64"
-
+    #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
     polya_data <- data.table::fread(polya_path, integer64 = "numeric", data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE) %>% dplyr::as_tibble()
     polya_data %<>% dplyr::mutate(polya_length = round(polya_length))
     # change first column name
@@ -40,7 +37,7 @@ read_polya_single <- function(polya_path, ensembl = TRUE, sample_name = NA) {
     # ENSMUST00000103410.2|ENSMUSG00000076609.2|OTTMUSG00000053470.1|OTTMUST00000133385.1|RP23-435I4.10-001|Igkc|532|IG_C_gene|
     # ENSMUST00000052902.8|Gm9797|k|5db8d4b0-ba94-40b5-a3f7-54afd85f51e1_0_ENSMUSG00000045455.8 if ENSEMBL based contig names - read ensembl IDS,
     # transcript names
-    if (ensembl == TRUE) {
+    if (gencode == TRUE) {
         transcript_names <- gsub(".*?\\|.*?\\|.*?\\|.*?\\|.*?\\|(.*?)\\|.*", "\\1", polya_data$contig)
         polya_data$transcript <- transcript_names
         ensembl_transcript_ids <- gsub("^(.*?)\\|.*\\|.*", "\\1", polya_data$contig)
@@ -60,15 +57,27 @@ read_polya_single <- function(polya_path, ensembl = TRUE, sample_name = NA) {
 
 # TODO Benchmark na lapply/for loop
 
-#' Reads multiple samples at once
+#' Reads multiple nanopolish polyA predictions at once
 #'
-#' @param samples_table - data.frame or tibble containing samples description and paths
-#' @param ... - additional parameters to pass to read_polya_single(), like ensembl=[TRUE/FALSE]
+#' This function can be used to load any number of files with polyA predictions with single invocation,
+#' allowing for metadata specification.
 #'
-#' @return a [tibble][tibble::tibble-package]
+#'
+#' @param samples_table data.frame or tibble containing samples metadata and paths to files.
+#' Should have at least two columns: \itemize{
+#' \item polya_path - containing path to the polya predictions file
+#' \item sample_name - unique name of the sample
+#' \item additional columns can provide metadata which will be included in the final table
+#' }
+#' @param ... - additional parameters to pass to read_polya_single(), like gencode=[TRUE/FALSE]
+#'
+#' @return a [tibble][tibble::tibble-package] containing polyA predictions for all specified samples, with metadata provided in samples_table
+#' stored as separate columns
+#'
+#' @family read_data
+#'
 #' @export
 #'
-#' @examples
 read_polya_multiple <- function(samples_table,...) {
 
   if (missing(samples_table)) {
@@ -84,14 +93,16 @@ read_polya_multiple <- function(samples_table,...) {
 }
 
 
-#' Title
+#' Removes reads which failed during Nanopolish polya processing
 #'
-#' @param polya_data
+#' Convenient function to quickly remove all reads failing during nanopolish polya processing
 #'
-#' @return a [tibble][tibble::tibble-package]
+#' @param polya_data output table from \code{read_polya_single} or \code{read_polya_multiple}
+#'
+#' @return a [tibble][tibble::tibble-package] with only reads having qc_tag=='PASS'
+#'
 #' @export
 #'
-#' @examples
 remove_failed_reads <- function(polya_data) {
 
   if (missing(polya_data)) {
