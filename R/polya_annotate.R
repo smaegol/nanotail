@@ -1,12 +1,11 @@
-#' Title
+#' Annotate polyA predictions using annotables
 #'
-#' @param polya_data
-#' @param genome
+#' @param polya_data polya data table to annotate
+#' @param genome valid genome from annotables to use for annotation
 #'
-#' @return
+#' @return a \link[tibble]{tibble}
 #' @export
 #'
-#' @examples
 annotate_with_annotables <- function(polya_data,genome) {
 
   if ( !requireNamespace('annotables',quietly = TRUE) ) {
@@ -14,6 +13,7 @@ annotate_with_annotables <- function(polya_data,genome) {
          install.packages('devtools')
         devtools::install_github('stephenturner/annotables')")
   }
+  require(annotables)
 
 
   if (missing(polya_data)) {
@@ -26,11 +26,11 @@ annotate_with_annotables <- function(polya_data,genome) {
          call. = FALSE)
   }
 
-  assert_that(has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   tx_to_gene_table = paste0(genome,"_tx2gene")
   print(tx_to_gene_table)
-  polya_data_annotated <-  polya_data %>% dplyr::left_join(eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
+  polya_data_annotated <-  polya_data %>% dplyr::left_join( eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
 
   return(polya_data_annotated)
   }

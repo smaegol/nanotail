@@ -4,24 +4,16 @@
 \alias{get_nanopolish_processing_info}
 \title{Get information about nanopolish processing}
 \usage{
-get_nanopolish_processing_info(polya_data, sample = NA)
+get_nanopolish_processing_info(polya_data, grouping_factor = NA)
 }
 \arguments{
-\item{polya_data}{A data.frame or tibble containig unfiltered polya output from Nanopolish,
-best read with \code{read_polya_single} or \code{read_polya_multiple}}
+\item{polya_data}{A data.frame or tibble containig unfiltered polya output from Nanopolish,}
 
-\item{sample}{string defining a sample to show, leave empty to show all samples}
+\item{grouping_factor}{How to group results (e.g. by sample_name)
+best read with \link[nanotail]{read_polya_single} or \link[nanotail]{read_polya_multiple}}
 }
 \value{
-A list with elements:
-\itemize{
-\item number_all_reads - sum of all reads processed
-\item number_adapter_reads - number of reads marked as ADAPTER
-\item number_noregion_reads - number of reads marked as NOREGION
-\item number_number_read_load_failed_reads - number of reads marked as READ_FAILED_LOAD
-\item number_number_suffclip_reads - number of reads marked as SUFFCLIP
-\item number_number_pass_reads - number of reads marked as PASS
-}
+A \link[table]{tibble} with counts for each processing state
 }
 \description{
 Process the information returned by \code{nanopolish polya} in the \code{qc_tag} column

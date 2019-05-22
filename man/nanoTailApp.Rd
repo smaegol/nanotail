@@ -2,19 +2,13 @@
 % Please edit documentation in R/polya_shiny_app.R
 \name{nanoTailApp}
 \alias{nanoTailApp}
-\title{Title}
+\title{wrapper for NanoTail Shiny interface}
 \usage{
-nanoTailApp(polya_table, summary_table)
+nanoTailApp(polya_table)
 }
 \arguments{
-\item{polya_table}{\itemize{
-\item data.table object with polyA data for all reads
-}}
-
-\item{summary_table}{\itemize{
-\item data frame with summarized polya lengths and statistics per transcript
-}}
+\item{polya_table}{polyA predictions table. Can be obtained with \link{read_polya_multiple}}
 }
 \description{
-Title
+wrapper for NanoTail Shiny interface
 }

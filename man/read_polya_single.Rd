@@ -22,6 +22,5 @@ a \link[tibble:tibble-package]{tibble} with polya predictions
 This is the basic function used to import output from \code{nanopolish polya} to R
 }
 \seealso{
-Other read_data: \code{\link{read_polya_multiple}}
+\link{read_polya_multiple}
 }
-\concept{read_data}

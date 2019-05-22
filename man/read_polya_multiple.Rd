@@ -11,11 +11,11 @@ read_polya_multiple(samples_table, ...)
 Should have at least two columns: \itemize{
 \item polya_path - containing path to the polya predictions file
 \item sample_name - unique name of the sample
-\item additional columns can provide metadata which will be included in the final table
-}}
+}
+Additional columns can provide metadata which will be included in the final table}
 
 \item{...}{\itemize{
-\item additional parameters to pass to read_polya_single(), like gencode=\link{TRUE/FALSE}
+\item additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
 }}
 }
 \value{
@@ -27,6 +27,5 @@ This function can be used to load any number of files with polyA predictions wit
 allowing for metadata specification.
 }
 \seealso{
-Other read_data: \code{\link{read_polya_single}}
+\link{read_polya_single}
 }
-\concept{read_data}

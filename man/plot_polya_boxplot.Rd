@@ -2,15 +2,35 @@
 % Please edit documentation in R/polya_plots.R
 \name{plot_polya_boxplot}
 \alias{plot_polya_boxplot}
-\title{Title}
+\title{Plots boxplot of estimated polya lengths}
 \usage{
 plot_polya_boxplot(polya_data, groupingFactor, scale_y_limit_low = NA,
   scale_y_limit_high = NA, color_palette = "Set1",
-  reverse_palette = 0, plot_title = "")
+  reverse_palette = 0, plot_title = NA, condition1 = NA,
+  condition2 = NA)
 }
 \arguments{
-\item{plot_title}{}
+\item{polya_data}{input table with polyA predictions}
+
+\item{groupingFactor}{which factor to use for grouping}
+
+\item{scale_y_limit_low}{lower limit of Y axis}
+
+\item{scale_y_limit_high}{upper limit of Y axis}
+
+\item{color_palette}{RColorBrewer palette to use}
+
+\item{reverse_palette}{Should the palette be reversed?}
+
+\item{plot_title}{Plot title (optional)}
+
+\item{condition1}{First condition to include on the plot}
+
+\item{condition2}{Second condition to include on the plot}
+}
+\value{
+\link[ggplot2]{ggplot} object
 }
 \description{
-Title
+Plots boxplot of estimated polya lengths
 }

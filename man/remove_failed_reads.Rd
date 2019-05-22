@@ -7,11 +7,14 @@
 remove_failed_reads(polya_data)
 }
 \arguments{
-\item{polya_data}{output table from \code{read_polya_single} or \code{read_polya_multiple}}
+\item{polya_data}{output table from \link{read_polya_single} or \link{read_polya_multiple}}
 }
 \value{
 a \link[tibble:tibble-package]{tibble} with only reads having qc_tag=='PASS'
 }
 \description{
 Convenient function to quickly remove all reads failing during nanopolish polya processing
+}
+\seealso{
+\link{read_polya_single}, \link{read_polya_multiple}
 }

@@ -2,15 +2,38 @@
 % Please edit documentation in R/polya_plots.R
 \name{plot_polya_distribution}
 \alias{plot_polya_distribution}
-\title{Title}
+\title{Plots polya distribution as ndensity plot}
 \usage{
-plot_polya_distribution(polya_data, groupingFactor,
-  scale_x_limit_low = NA, scale_x_limit_high = NA,
-  color_palette = "Set1", reverse_palette = 0)
+plot_polya_distribution(polya_data, groupingFactor = NA,
+  parameter_to_plot = "polya_length", scale_x_limit_low = NA,
+  scale_x_limit_high = NA, color_palette = "Set1",
+  reverse_palette = 0, plot_title = NA, condition1 = NA,
+  condition2 = NA)
 }
 \arguments{
-\item{reverse_palette}{}
+\item{polya_data}{input data with polyA predictions}
+
+\item{groupingFactor}{how to group}
+
+\item{parameter_to_plot}{what to plot on x scale (defaults to polya_length)}
+
+\item{scale_x_limit_low}{lower limit of x axis}
+
+\item{scale_x_limit_high}{upper limit of x axis}
+
+\item{color_palette}{RcolorBrewer palette}
+
+\item{reverse_palette}{should color palette be reversed? (TRUE or FALSE)}
+
+\item{plot_title}{(optional) plot title (parameter for ggtitle)}
+
+\item{condition1}{First condition to include on the plot}
+
+\item{condition2}{Second condition to include on the plot}
+}
+\value{
+\link[ggplot2]{ggplot} object
 }
 \description{
-Title
+Plots polya distribution as ndensity plot
 }

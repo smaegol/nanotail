@@ -2,16 +2,21 @@
 % Please edit documentation in R/polya_stats.R
 \name{summarize_polya}
 \alias{summarize_polya}
-\title{Title}
+\title{Summarizes input polya table}
 \usage{
-summarize_polya(polya_data, summary_factors = c("group"))
+summarize_polya(polya_data, summary_factors = c("group"),
+  transcript_id_column = c("transcript"))
 }
 \arguments{
-\item{summary_factors}{}
+\item{polya_data}{input table with polyA predictions}
+
+\item{summary_factors}{specifies column used for grouping (default: group)}
+
+\item{transcript_id_column}{specifies which column use as transcript identifier (default: transcript)}
 }
 \value{
-long-format tibble with per-transcript statistics for each sample
+long-format \link[tibble]{tibble} with per-transcript statistics for each sample
 }
 \description{
-Title
+Summarizes input table with polyA predictions, calculating medians, mean, geometric means and standard deviation values for each transcript (default).
 }

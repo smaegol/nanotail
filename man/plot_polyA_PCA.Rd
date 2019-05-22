@@ -2,13 +2,18 @@
 % Please edit documentation in R/polya_plots.R
 \name{plot_polyA_PCA}
 \alias{plot_polyA_PCA}
-\title{Title}
+\title{PCA biplot}
 \usage{
 plot_polyA_PCA(pca_object, samples_names)
 }
 \arguments{
-\item{samples_names}{}
+\item{pca_object}{pca object}
+
+\item{samples_names}{names of samples to be shown on the plot}
+}
+\value{
+\link[ggplot2]{ggplot} object
 }
 \description{
-Title
+Plots PCA biplot using \link[ggbiplot]{ggbiplot}
 }
