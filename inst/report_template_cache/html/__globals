@@ -1,4 +1,0 @@
-unnamed-chunk-3	axis_elements_size	axis_titles_size	colors_pallette	presentation_ggplot2_theme	theme	element_text
-unnamed-chunk-4	polya_data	read_polya_multiple	input_samples_table	polya_data_filtered	remove_failed_reads
-unnamed-chunk-5	kable	input_samples_table	%>%	select	polya_path
-unnamed-chunk-6	nanopolish_qc	get_nanopolish_processing_info	polya_data	nanopolish_qc_plot	plot_nanopolish_qc	print
