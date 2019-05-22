@@ -45,6 +45,8 @@ nanoTailApp <- function(polya_table) {
   #remove failed reads from polya_table before further analysis
   polya_table_passed <- remove_failed_reads(polya_table)
 
+  # make sure transcript names are not factor
+  polya_table_passed$transcript <- as.character(polya_table_passed$transcript)
 
   # Convert polya_table to data.table (if required)
   # TODO check if is already datatable or not
@@ -296,35 +298,45 @@ nanoTailApp <- function(polya_table) {
     output$polya_boxplot = plotly::renderPlotly({
       summary_table = values$polya_statistics_summary_table
 
-      selected_row <- input$diff_polya_rows_selected
-      selected_transcript = summary_table[selected_row,]$transcript
-      data_transcript = data_transcript()
-      if (input$plot_only_selected_conditions) {
-        polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+
+      if (length(input$diff_polya_rows_selected)>0) {
+        selected_row <- input$diff_polya_rows_selected
+        selected_transcript = summary_table[selected_row,]$transcript
+        data_transcript = data_transcript()
+        if (input$plot_only_selected_conditions) {
+          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+        }
+        else {
+          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript)
+        }
+
+        plotly::ggplotly(polya_boxplot)
       }
       else {
-        polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript)
+        plotly::plotly_empty()
       }
-
-      plotly::ggplotly(polya_boxplot)
-
     })
 
     # Show denisty plot of estimated polya lengths for selected transcript
     output$polya_distribution = plotly::renderPlotly({
       summary_table = values$polya_statistics_summary_table
 
-      selected_row <- input$diff_polya_rows_selected
-      selected_transcript = summary_table[selected_row,]$transcript
-      data_transcript = data_transcript()
-      if (input$plot_only_selected_conditions) {
-        transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+
+      if (length(input$diff_polya_rows_selected)>0) {
+        selected_row <- input$diff_polya_rows_selected
+        selected_transcript = summary_table[selected_row,]$transcript
+        data_transcript = data_transcript()
+        if (input$plot_only_selected_conditions) {
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+        }
+        else {
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript)
+        }
+        plotly::ggplotly(transcript_distribution_plot)
       }
       else {
-        transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript)
+        plotly::plotly_empty()
       }
-      plotly::ggplotly(transcript_distribution_plot)
-
     })
 
     # Show volcano plot of differntial adenylation analysis
