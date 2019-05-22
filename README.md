@@ -1,6 +1,8 @@
 # nanotail
 
 <!-- badges: start -->
+[![Build Status](https://travis-ci.org/smaegol/nanotail.svg?branch=master)](https://travis-ci.org/smaegol/nanotail)
+[![codecov](https://codecov.io/gh/smaegol/nanotail/branch/master/graph/badge.svg)](https://codecov.io/gh/smaegol/nanotail)
 <!-- badges: end -->
 
 The goal of **NanoTail** is to provide a set of functions to manipulate and analyze data coming from polyA lengths estimations done using Oxford Nanopore Direct RNA sequencing and Nanopolish software. The software is still in thee development phase so all suggestions are welcome. Please also expect the code to be changed frequently, so use it with caution.
@@ -44,7 +46,10 @@ nanoTailApp(polya_table = polya_data_multiple)
 ```
 
 
+
 ## Citation
 
 Please cite NanoTail as:
 Krawczyk PS et al., NanoTail - R package for exploratory analysis of Nanopore Direct RNA based polyA lengths estimations
+
+Preprint manuscript in the preparation.
