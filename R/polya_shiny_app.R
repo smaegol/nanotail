@@ -17,6 +17,10 @@ nanoTailApp <- function(polya_table) {
     stop("NanoTail requires 'shiny'. Please install it using
          install.packages('shiny')")
   }
+  if ( !requireNamespace('shiny',quietly = TRUE) ) {
+    stop("NanoTail requires 'shinydashboard'. Please install it using
+         install.packages('shinydashboard')")
+  }
   if ( !requireNamespace('shinycssloaders',quietly = TRUE) ) {
     stop("NanoTail requires 'shinycssloaders'. Please install it using
          install.packages('shinycssloaders')")
@@ -150,70 +154,70 @@ nanoTailApp <- function(polya_table) {
     shinydashboard::dashboardBody(
       shinydashboard::tabItems(
         shinydashboard::tabItem(tabName = "dashboard",
-          fillPage(padding = 0, title = NULL, bootstrap = F, theme = NULL,
-             wellPanel(style = "background-color: #ffffff; overflow-y:scroll; max-height: 750px;",
+          shiny::fillPage(padding = 0, title = NULL, bootstrap = F, theme = NULL,
+             shiny::wellPanel(style = "background-color: #ffffff; overflow-y:scroll; max-height: 750px;",
                        includeMarkdown(system.file("extdata", "about.md",package = "nanotail")))
           )),
         shinydashboard::tabItem(tabName = "basicInfo",
-          fluidRow(
-            infoBoxOutput("numberOfSamples"),
-            infoBoxOutput("numberOfTranscripts"),
-            infoBoxOutput("numberOfAllReads")),
-          fluidRow(
-            column(1),
-            column(7,fluidRow(h4("Per sample plot:")),
-               fluidRow(
+          shiny::fluidRow(
+            shinydashboard::infoBoxOutput("numberOfSamples"),
+            shinydashboard::infoBoxOutput("numberOfTranscripts"),
+            shinydashboard::infoBoxOutput("numberOfAllReads")),
+          shiny::fluidRow(
+            shiny::column(1),
+            shiny::column(7,fluidRow(h4("Per sample plot:")),
+               shiny::fluidRow(
                   plotly::plotlyOutput("nanopolish_qc_summary_plot"),
-                  checkboxInput("show_frequency_plot_nanopolioshQC",label = "Show QC as frequencies?",value = TRUE))),
-            column(1),
-            column(3,fluidRow(h4("Information for all samples:")),
-               fluidRow(infoBoxOutput("numberOfPassReads",width = NULL)),
-               fluidRow(infoBoxOutput("numberOfAdapterReads",width = NULL)),
-               fluidRow(infoBoxOutput("numberOfReadLoadFailedReads",width = NULL)),
-               fluidRow(infoBoxOutput("numberOfNoregionReads",width = NULL))))),
+                  shiny::checkboxInput("show_frequency_plot_nanopolioshQC",label = "Show QC as frequencies?",value = TRUE))),
+            shiny::column(1),
+            shiny::column(3,fluidRow(h4("Information for all samples:")),
+               shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfPassReads",width = NULL)),
+               shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfAdapterReads",width = NULL)),
+               shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfReadLoadFailedReads",width = NULL)),
+               shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfNoregionReads",width = NULL))))),
         shinydashboard::tabItem(tabName = "plot_settings",
-          box(
+          shinydashboard::box(
             shinyWidgets::pickerInput(inputId = "col_palette", label = "Colour scale",
                 choices = colors_pal, selected = "Set1", width = "100%",
                 choicesOpt = list(
                   content = sprintf(
                     "<div style='width:100%%;padding:5px;border-radius:4px;background:%s;color:%s'>%s</div>",
                     unname(background_pals), colortext_pals, names(background_pals)))),
-          uiOutput("Colorblind"),
-          checkboxInput("reverse", "reverse color scale", value = FALSE),
-          sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
-          sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10),
-          sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
-          sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50))),
+            shiny::uiOutput("Colorblind"),
+            shiny::checkboxInput("reverse", "reverse color scale", value = FALSE),
+            shiny::sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
+            shiny::sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10),
+            shiny::sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
+            shiny::sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50))),
         shinydashboard::tabItem(tabName = "global_distr",
           h2("Global comparison"),
-          fluidRow(
-            box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE))),
+          shiny::fluidRow(
+            shinydashboard::box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE))),
         shinydashboard::tabItem(tabName = "diff_polya",
           fluidRow(
-            box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
-            tabBox(title = "per transcript plots",id="tabset1", height="500px",
-                   tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
-                   tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
-                   tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
-          fluidRow(
-            box(actionButton("compute_diff_polya",
+            shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
+            shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
+                   shinydashboard::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
+                   shinydashboard::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
+                   shinydashboard::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
+          shiny::fluidRow(
+            shinydashboard::box(actionButton("compute_diff_polya",
                              HTML("Compute Polya statistics"),
                              icon = icon("spinner")),
-                checkboxInput("use_dwell_time_for_statistics",label = "Use dwell time instead of calculated polya_length for statistics",value = FALSE),
-                selectInput("polya_stat_test","statistical test to use",choices = c("Wilcoxon","KS"),selected = "Wilcoxon"),
-                sliderInput("min_reads_for_polya_stats","Minimal count of reads per transcript",0,100,10,1),collapsible = TRUE,width=12))),
+                shiny::checkboxInput("use_dwell_time_for_statistics",label = "Use dwell time instead of calculated polya_length for statistics",value = FALSE),
+                shiny::selectInput("polya_stat_test","statistical test to use",choices = c("Wilcoxon","KS"),selected = "Wilcoxon"),
+                shiny::sliderInput("min_reads_for_polya_stats","Minimal count of reads per transcript",0,100,10,1),collapsible = TRUE,width=12))),
         shinydashboard::tabItem(tabName = "diff_exp",
-          fluidRow(
-            box(DT::dataTableOutput('diff_exp_table')),
-                tabBox(title = "plots",id="tabset2",height="500px",
+          shiny::fluidRow(
+            shinydashboard::box(DT::dataTableOutput('diff_exp_table')),
+            shinydashboard::tabBox(title = "plots",id="tabset2",height="500px",
                   #tabPanel("pca_biplot",plotOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
-                  tabPanel("scatter plot of counts",actionButton("show_scatter_plot",
+                  shinydashboard::tabPanel("scatter plot of counts",actionButton("show_scatter_plot",
                                                       HTML("Show scatter plot"),
                                                       icon = icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
-                  tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
-                  tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
-          fluidRow(actionButton("compute_diff_exp",
+                  shinydashboard::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
+                  shinydashboard::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
+          shiny::fluidRow(actionButton("compute_diff_exp",
                                  HTML("Compute Differential Expression using Binomial Test"),
                                  icon = icon("spinner")))))))
 
