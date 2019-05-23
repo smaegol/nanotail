@@ -7,11 +7,12 @@
 #' wrapper for NanoTail Shiny interface
 #'
 #' @param polya_table polyA predictions table. Can be obtained with \link{read_polya_multiple}
+#' @param precomputed_polya_statistics precomputed differential adenylation table (obtained with \link{calculate_polya_stats})
 #'
 #' @export
 #'
 
-nanoTailApp <- function(polya_table) {
+nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
   if ( !requireNamespace('shiny',quietly = TRUE) ) {
     stop("NanoTail requires 'shiny'. Please install it using
@@ -120,7 +121,16 @@ nanoTailApp <- function(polya_table) {
   processing_info_per_sample_spread <- processing_info_per_sample %>% tidyr::spread(qc_tag,n)
 
   polya_summary_table <- summarize_polya(polya_data = polya_table_passed,summary_factors = "sample_name")
-  initial_summary_table <- polya_summary_table %>% dplyr::select(transcript,sample_name,polya_median) %>% tidyr::spread(sample_name,polya_median)
+  if (!is.na(precomputed_polya_statistics)) {
+    assertthat::assert_that(is.list(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
+    assertthat::assert_that("summary" %in% names(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
+    initial_summary_table = precomputed_polya_statistics$summary  %>% dplyr::select(transcript,dplyr::ends_with("_counts"),dplyr::ends_with("_polya_median"),p.value,padj)
+    initial_table_for_volcano <- precomputed_polya_statistics$summary %>% dplyr::select(transcript,fold_change,padj,significance)
+  }
+  else {
+    initial_summary_table <- polya_summary_table %>% dplyr::select(transcript,sample_name,polya_median) %>% tidyr::spread(sample_name,polya_median)
+    initial_table_for_volcano <- initial_summary_table
+  }
   initial_summary_table_counts <- polya_summary_table %>% dplyr::select(transcript,sample_name,counts) %>% tidyr::spread(sample_name,counts)
 
 
@@ -230,6 +240,7 @@ nanoTailApp <- function(polya_table) {
     values <- reactiveValues()
     values$polya_table <- polya_table_passed
     values$polya_statistics_summary_table = initial_summary_table
+    values$polya_table_for_volcano = initial_table_for_volcano
     values$diffexp_summary_table = initial_summary_table_counts
     values$polya_table_summarized <- polya_summary_table
     values$processing_info_global <- processing_info_global
