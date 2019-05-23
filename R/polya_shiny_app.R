@@ -280,8 +280,8 @@ nanoTailApp <- function(polya_table) {
     # Output elements rendering section  ---------------------------------------------------------
 
     ## Use DT::datatable for tables
-    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip'))
-    output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"))
+    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip'))
+    output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"))
 
 
     ## Show global polyA distribution as density plot

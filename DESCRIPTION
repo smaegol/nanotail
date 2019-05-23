@@ -39,5 +39,6 @@ Imports:
     plotly (>= 4.8.0),
     testthat (>= 2.0.1),
     shinycssloaders (>= 0.2.0),
-    DT (>= 0.5)
+    DT (>= 0.5),
+    stringr (>= 1.4.0)
 Remotes: stephenturner/annotables
