@@ -67,19 +67,19 @@ nanoTailApp <- function(polya_table) {
   # List of palettes
   colors_pal <- lapply(
     X = split(
-      x = brewer.pal.info,
-      f = factor(brewer.pal.info$category, labels = c("Diverging", "Qualitative", "Sequential"))
+      x = RColorBrewer::brewer.pal.info,
+      f = factor(RColorBrewer::brewer.pal.info$category, labels = c("Diverging", "Qualitative", "Sequential"))
     ),
     FUN = rownames
   )
 
   # Get all colors given a palette name(s)
   get_brewer_name <- function(name) {
-    pals <- brewer.pal.info[rownames(brewer.pal.info) %in% name, ]
+    pals <- RColorBrewer::brewer.pal.info[rownames(RColorBrewer::brewer.pal.info) %in% name, ]
     res <- lapply(
       X = seq_len(nrow(pals)),
       FUN = function(i) {
-        brewer.pal(n = pals$maxcolors[i], name = rownames(pals)[i])
+        RColorBrewer::brewer.pal(n = pals$maxcolors[i], name = rownames(pals)[i])
       }
     )
     unlist(res)
@@ -263,7 +263,7 @@ nanoTailApp <- function(polya_table) {
 
 
     output$Colorblind <- renderUI({
-      if(brewer.pal.info %>% subset(rownames(.) == input$col_palette) %>% .$colorblind) {
+      if(RColorBrewer::brewer.pal.info %>% subset(rownames(.) == input$col_palette) %>% .$colorblind) {
         txt_ <- "Yes"
       } else {
         txt_ <- "No"
