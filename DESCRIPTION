@@ -37,5 +37,5 @@ Imports:
     multcomp (>= 1.4.10),
     ggplot2 (>= 3.1.1),
     plotly (>= 4.8.0),
-    testthat (>= 2.0.1)
+    testthat (>= 2.0.1),
 Remotes: stephenturner/annotables

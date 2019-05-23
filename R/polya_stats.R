@@ -30,6 +30,8 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
 
   available_statistical_tests = c("Wilcoxon","KS","glm")
 
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+
   assertthat::assert_that(stat_test %in% available_statistical_tests,msg = "Please provide one of available statistical tests (Wilcoxon, KS or glm)")
   assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
   assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
@@ -210,6 +212,9 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
 #'
 calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 
+
+  assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset"))
+
   polya_data_summarized <- polya_data_summarized %>% dplyr::select(transcript,sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
   polya_data_summarized[is.na(polya_data_summarized)] <- 0
   sample_names <- colnames(polya_data_summarized[,-1])
@@ -239,7 +244,12 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 #'
 get_nanopolish_processing_info <- function(polya_data,grouping_factor=NA) {
 
+
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+
+
   if(!is.na(grouping_factor)) {
+    assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
     processing_info <- polya_data %>% dplyr::mutate(qc_tag=forcats::fct_relevel(qc_tag,"PASS", after = Inf)) %>% dplyr::group_by(!!rlang::sym(grouping_factor),qc_tag) %>% dplyr::count()
   }
   else {
@@ -269,7 +279,7 @@ get_nanopolish_processing_info <- function(polya_data,grouping_factor=NA) {
 #'
 #' @seealso \link[edgeR]{binomTest}
 #'
-calculate_diff_exp_binom <- function(polya_data,grouping_factor,condition1,condition2,alpha=0.05,summarized_input=FALSE) {
+calculate_diff_exp_binom <- function(polya_data,grouping_factor=NA,condition1=NA,condition2=NA,alpha=0.05,summarized_input=FALSE) {
 
 
 
@@ -283,7 +293,29 @@ calculate_diff_exp_binom <- function(polya_data,grouping_factor,condition1,condi
          call. = FALSE)
   }
 
-  assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
+  assertthat::assert_that(assertive::is_a_bool(summarized_input),msg="Non-boolean value provided for option summarized_input")
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  if (!is.na(grouping_factor)) {
+    assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
+    if (!is.na(condition1)) {
+      if(!is.na(condition2)) {
+        assertthat::assert_that(condition1 %in% levels(polya_data[[grouping_factor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (grouping_factor)"))
+        assertthat::assert_that(condition2 %in% levels(polya_data[[grouping_factor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (grouping_factor)"))
+        assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
+      }
+      else {
+        stop("Please provide both condition1 and condition2 for comparison")
+      }
+    }
+    else {
+      stop("Please provide both condition1 and condition2 for comparison")
+    }
+  }
+  else {
+    stop("Please provide valid grouping_factor")
+  }
+
+  assertthat::assert_that(is.numeric(alpha),msg = "Non-numeric parameter provided (alpha)")
 
   if (summarized_input){
     polya_data_summarized <- polya_data

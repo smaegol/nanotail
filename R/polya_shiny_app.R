@@ -35,6 +35,8 @@ nanoTailApp <- function(polya_table) {
 
 
   assertthat::assert_that(assertive::has_rows(polya_table),msg = "Empty data frame provided as an input (polya_table). Please provide the correct polya_table")
+  assertthat::assert_that("polya_length" %in% colnames(polya_table),msg = "Input polya_table should contain polya length predictions. Did you provide valid input?")
+  assertthat::assert_that("transcript" %in% colnames(polya_table),msg = "Input polya_table should contain 'transcript' column. Did you provide valid input?")
   assertthat::assert_that("sample_name" %in% colnames(polya_table),msg = "Input polya_table should contain at least `sample_name` column for grouping. If data were read using read_polya_single() function please use read_polya_single(...,sample_name= SAMPLE_NAME ) or read_polya_multiple() to provide metadata")
   assertthat::assert_that(is.factor(polya_table$sample_name),msg = "Sample_name column should be a factor")
 
@@ -313,7 +315,7 @@ nanoTailApp <- function(polya_table) {
         plotly::ggplotly(polya_boxplot)
       }
       else {
-        plotly::plotly_empty()
+        suppressWarnings(plotly::plotly_empty())
       }
     })
 
@@ -335,7 +337,7 @@ nanoTailApp <- function(polya_table) {
         plotly::ggplotly(transcript_distribution_plot)
       }
       else {
-        plotly::plotly_empty()
+        suppressWarnings(plotly::plotly_empty())
       }
     })
 
@@ -344,12 +346,12 @@ nanoTailApp <- function(polya_table) {
 
       # show only if differential adenylation analysis was already done
       if("fold_change" %in% colnames(values$polya_table_for_volcano)) {
-        volcanoPlot <- plot_volcano(binom_test_output =values$polya_table_for_volcano,color_palette = input$col_palette,reverse_palette = input$reverse)
+        volcanoPlot <- plot_volcano(input_data =values$polya_table_for_volcano,color_palette = input$col_palette,reverse_palette = input$reverse)
         plotly::ggplotly(volcanoPlot)
       }
       else {
         showNotification("Launch differential polyadenylation analysis first",closeButton=TRUE,type="warning")
-        plotly::plotly_empty()
+        suppressWarnings(plotly::plotly_empty())
       }
 
     })
@@ -397,12 +399,12 @@ nanoTailApp <- function(polya_table) {
 
       # show only if differential expression analysis was already done
       if("fold_change" %in% colnames(values$diffexp_summary_table)) {
-        volcanoPlot <- plot_volcano(binom_test_output =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
+        volcanoPlot <- plot_volcano(input_data =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
         plotly::ggplotly(volcanoPlot)
       }
       else {
         showNotification("Launch differential expression analysis first",closeButton=TRUE,type="warning")
-        plotly::plotly_empty()
+        suppressWarnings(plotly::plotly_empty())
       }
 
     })
@@ -413,7 +415,7 @@ nanoTailApp <- function(polya_table) {
 
       # show only if differential expression analysis was already done
       if("fold_change" %in% colnames(values$diffexp_summary_table)) {
-        MAplot <- plot_MA(binom_test_output =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
+        MAplot <- plot_MA(input_data =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
         plotly::ggplotly(MAplot)
       }
       else {

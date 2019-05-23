@@ -6,6 +6,7 @@
 #' @param samples_names names of samples to be shown on the plot
 #'
 #' @return \link[ggplot2]{ggplot} object
+
 #' @export
 #'
 plot_polyA_PCA <- function(pca_object,samples_names) {
@@ -32,7 +33,7 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @export
 #'
 
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", scale_x_limit_low=NA, scale_x_limit_high=NA, color_palette = "Set1", reverse_palette = 0, plot_title = NA, condition1=NA,condition2=NA) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", scale_x_limit_low=NA, scale_x_limit_high=NA, color_palette = "Set1", reverse_palette = FALSE, plot_title = NA, condition1=NA,condition2=NA) {
 
 
   if (missing(polya_data)) {
@@ -41,6 +42,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
   }
 
   assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
 
 
   if (!is.na(condition1)) {
@@ -102,7 +104,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_boxplot <- function(polya_data, groupingFactor, scale_y_limit_low=NA, scale_y_limit_high=NA, color_palette = "Set1", reverse_palette = 0, plot_title = NA,condition1=NA,condition2=NA) {
+plot_polya_boxplot <- function(polya_data, groupingFactor, scale_y_limit_low=NA, scale_y_limit_high=NA, color_palette = "Set1", reverse_palette = FALSE, plot_title = NA,condition1=NA,condition2=NA) {
 
 
   if (missing(polya_data)) {
@@ -111,7 +113,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor, scale_y_limit_low=NA,
   }
 
   assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
-
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
 
   if (!is.na(condition1)) {
     if(!is.na(condition2)) {
@@ -160,13 +162,23 @@ plot_polya_boxplot <- function(polya_data, groupingFactor, scale_y_limit_low=NA,
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, color_palette = "Set1", reverse_palette = 0,condition1 = NA, condition2 = NA,min_counts=0,max_counts=NA) {
+plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, color_palette = "Set1", reverse_palette = FALSE,condition1 = NA, condition2 = NA,min_counts=0,max_counts=NA) {
 
+
+  if (missing(polya_data_summarized)) {
+    stop("Summarized PolyA predictions are missing. Please provide a valid polya_data argument",
+         call. = FALSE)
+  }
 
 
   assertthat::assert_that(!is.na(condition1),msg = "Please specify conditions for comparison")
   assertthat::assert_that(!is.na(condition2),msg = "Please specify conditions for comparison")
   assertthat::assert_that(!is.na(groupingFactor),msg = "Please specify groupingFactor")
+  assertthat::assert_that(condition1 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
+  assertthat::assert_that(condition2 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
+  assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
+  assertthat::assert_that("counts" %in% colnames(polya_data_summarized),msg = "Please provide summarized polya table (using summarize_polya()) as an input")
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
 
   polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
 
@@ -175,6 +187,7 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, colo
   polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)>=min_counts,!!rlang::sym(condition2)>=min_counts)
 
   if (!is.na(max_counts)) {
+    assertthat::assert_that(assertive::is_numeric(max_counts),msg="Please provide numeric value for max_counts")
     polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)<=max_counts,!!rlang::sym(condition2)<=max_counts)
   }
 
@@ -202,10 +215,22 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, colo
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_nanopolish_qc <- function(nanopolish_processing_info,color_palette = "Set1", reverse_palette = 0,frequency=TRUE) {
+plot_nanopolish_qc <- function(nanopolish_processing_info,color_palette = "Set1", reverse_palette = FALSE,frequency=TRUE) {
 
 
+  if (missing(nanopolish_processing_info)) {
+    stop("nanopolish processing info is missing. Please provide a valid nanopolish_processing_info argument",
+         call. = FALSE)
+  }
+
+  assertthat::assert_that(assertive::has_rows(nanopolish_processing_info),msg = "Empty data.frame provided as an input")
   basic_colnames = c("qc_tag","n")
+  assertthat::assert_that(basic_colnames[1] %in% colnames(nanopolish_processing_info),msg="qc_tag column is missing in the input. Is that valid output of get_nanopolish_processing_info()?")
+  assertthat::assert_that(basic_colnames[2] %in% colnames(nanopolish_processing_info),msg="n column is missing in the input. Is that valid output of get_nanopolish_processing_info()?")
+
+  assertthat::assert_that(assertive::is_a_bool(frequency),msg="Non-boolean value provided for option frequency")
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
+
   # if there were multiple samples compared
   if (ncol(nanopolish_processing_info)>2) {
     grouping_colname = setdiff(colnames(nanopolish_processing_info),basic_colnames)
@@ -243,9 +268,22 @@ plot_nanopolish_qc <- function(nanopolish_processing_info,color_palette = "Set1"
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_volcano <- function(binom_test_output,color_palette = "Set1", reverse_palette = 0) {
+plot_volcano <- function(input_data,color_palette = "Set1", reverse_palette = FALSE) {
 
-  volcano_plot <- ggplot2::ggplot(binom_test_output,ggplot2::aes(x=log2(fold_change),y=-log10(padj),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
+
+  if (missing(input_data)) {
+    stop("nanopolish processing info is missing. Please provide a valid nanopolish_processing_info argument",
+         call. = FALSE)
+  }
+
+  assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
+  assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). fold_change column is missing.")
+  assertthat::assert_that("padj" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). padj column is missing.")
+  assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). significance column is missing.")
+  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). transcript column is missing.")
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
+
+  volcano_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log2(fold_change),y=-log10(padj),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
 
   if (reverse_palette) {
     volcano_plot <- volcano_plot + ggplot2::scale_color_brewer(palette = color_palette,direction=-1)
@@ -268,9 +306,22 @@ plot_volcano <- function(binom_test_output,color_palette = "Set1", reverse_palet
 #' @export
 #'
 
-plot_MA <- function(binom_test_output,color_palette = "Set1", reverse_palette = 0) {
+plot_MA <- function(input_data,color_palette = "Set1", reverse_palette = FALSE) {
 
-  MA_plot <- ggplot2::ggplot(binom_test_output,ggplot2::aes(x=log10(mean_expr),y=log2(fold_change),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
+
+  if (missing(input_data)) {
+    stop("nanopolish processing info is missing. Please provide a valid nanopolish_processing_info argument",
+         call. = FALSE)
+  }
+
+  assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
+  assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). fold_change column is missing.")
+  assertthat::assert_that("mean_expr" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). padj column is missing.")
+  assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). significance column is missing.")
+  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). transcript column is missing.")
+  assertthat::assert_that(assertive::is_a_bool(reverse_palette),msg="Please provide boolen value for reverse_palette option")
+
+  MA_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log10(mean_expr),y=log2(fold_change),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
 
   if (reverse_palette) {
     MA_plot <- MA_plot + ggplot2::scale_color_brewer(palette = color_palette,direction=-1)
