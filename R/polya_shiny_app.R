@@ -197,9 +197,9 @@ nanoTailApp <- function(polya_table) {
           fluidRow(
             shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
             shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
-                   shinydashboard::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
-                   shinydashboard::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
-                   shinydashboard::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
+                   shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
+                   shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
+                   shiny::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(
             shinydashboard::box(actionButton("compute_diff_polya",
                              HTML("Compute Polya statistics"),
@@ -212,11 +212,11 @@ nanoTailApp <- function(polya_table) {
             shinydashboard::box(DT::dataTableOutput('diff_exp_table')),
             shinydashboard::tabBox(title = "plots",id="tabset2",height="500px",
                   #tabPanel("pca_biplot",plotOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
-                  shinydashboard::tabPanel("scatter plot of counts",actionButton("show_scatter_plot",
+                  shiny::tabPanel("scatter plot of counts",actionButton("show_scatter_plot",
                                                       HTML("Show scatter plot"),
                                                       icon = icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
-                  shinydashboard::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
-                  shinydashboard::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
+                  shiny::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
+                  shiny::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(actionButton("compute_diff_exp",
                                  HTML("Compute Differential Expression using Binomial Test"),
                                  icon = icon("spinner")))))))

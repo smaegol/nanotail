@@ -38,5 +38,6 @@ Imports:
     ggplot2 (>= 3.1.1),
     plotly (>= 4.8.0),
     testthat (>= 2.0.1),
-    shinycssloaders (>= 0.2.0)
+    shinycssloaders (>= 0.2.0),
+    DT (>= 0.5)
 Remotes: stephenturner/annotables
