@@ -5,7 +5,7 @@
 \title{Title}
 \usage{
 plot_counts_scatter(polya_data_summarized, groupingFactor = NA,
-  color_palette = "Set1", reverse_palette = 0, condition1 = NA,
+  color_palette = "Set1", reverse_palette = FALSE, condition1 = NA,
   condition2 = NA, min_counts = 0, max_counts = NA)
 }
 \arguments{

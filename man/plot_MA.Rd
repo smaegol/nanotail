@@ -4,14 +4,14 @@
 \alias{plot_MA}
 \title{Plots MA plot of differential expression analysis}
 \usage{
-plot_MA(binom_test_output, color_palette = "Set1", reverse_palette = 0)
+plot_MA(input_data, color_palette = "Set1", reverse_palette = FALSE)
 }
 \arguments{
-\item{binom_test_output}{a table with output from \link{calculate_diff_exp_binom}}
-
 \item{color_palette}{RColorBrewer palette to use}
 
 \item{reverse_palette}{should the palette be reserved}
+
+\item{binom_test_output}{a table with output from \link{calculate_diff_exp_binom}}
 }
 \value{
 \link[ggplot2]{ggplot} object

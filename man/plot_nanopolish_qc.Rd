@@ -5,7 +5,7 @@
 \title{Plot Nanopolish polya QC}
 \usage{
 plot_nanopolish_qc(nanopolish_processing_info, color_palette = "Set1",
-  reverse_palette = 0, frequency = TRUE)
+  reverse_palette = FALSE, frequency = TRUE)
 }
 \arguments{
 \item{nanopolish_processing_info}{output of \link{get_nanopolish_processing_info}}

@@ -4,15 +4,15 @@
 \alias{plot_volcano}
 \title{Plots volcano plot of differential expression analysis}
 \usage{
-plot_volcano(binom_test_output, color_palette = "Set1",
-  reverse_palette = 0)
+plot_volcano(input_data, color_palette = "Set1",
+  reverse_palette = FALSE)
 }
 \arguments{
-\item{binom_test_output}{a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}}
-
 \item{color_palette}{RColorBrewer palette to use}
 
 \item{reverse_palette}{should the palette be reserved}
+
+\item{binom_test_output}{a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}}
 }
 \value{
 \link[ggplot2]{ggplot} object

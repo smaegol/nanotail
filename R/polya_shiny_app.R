@@ -254,19 +254,19 @@ nanoTailApp <- function(polya_table) {
     # UI elements rendering ---------------------------------------------------------
 
     ## Generate select  inputs for conditions used for comparison, based on selected groupingFactor:  ---------------------------------------------------------
-    output$condition1UI <- renderUI({
+    output$condition1UI <- shiny::renderUI({
       group_factor = input$groupingFactor
       selectizeInput("condition1_diff_exp","Condition 1",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[1])
 
     })
-    output$condition2UI <- renderUI({
+    output$condition2UI <- shiny::renderUI({
       group_factor = input$groupingFactor
       selectizeInput("condition2_diff_exp","Condition 2",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[2])
 
     })
 
 
-    output$Colorblind <- renderUI({
+    output$Colorblind <- shiny::renderUI({
       if(RColorBrewer::brewer.pal.info %>% subset(rownames(.) == input$col_palette) %>% .$colorblind) {
         txt_ <- "Yes"
       } else {
@@ -354,34 +354,34 @@ nanoTailApp <- function(polya_table) {
         plotly::ggplotly(volcanoPlot)
       }
       else {
-        showNotification("Launch differential polyadenylation analysis first",closeButton=TRUE,type="warning")
+        shiny::showNotification("Launch differential polyadenylation analysis first",closeButton=TRUE,type="warning")
         suppressWarnings(plotly::plotly_empty())
       }
 
     })
 
     # Calculate differential adenylation if action button was clicked
-    observeEvent(input$compute_diff_polya,
+    shiny::observeEvent(input$compute_diff_polya,
     {
       if(number_of_samples>1) {
-        withProgress(message="Computing polya statistics...",
+        shiny::withProgress(message="Computing polya statistics...",
           detail = "This step can take a little while",
           value = 0.05,min=0,max=1,
           {
             condition1 = input$condition1_diff_exp
             condition2 = input$condition2_diff_exp
-            incProgress(1/20)
+            shiny::incProgress(1/20)
             polya_stats <- calculate_polya_stats(values$polya_table,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,stat_test=input$polya_stat_test,use_dwell_time=input$use_dwell_time_for_statistics,min_reads = input$min_reads_for_polya_stats)
-            incProgress(15/20)
+            shiny::incProgress(15/20)
             values$polya_statistics_summary_table <- polya_stats$summary %>% dplyr::select(transcript,!!rlang::sym(paste0(condition1,"_counts")),!!rlang::sym(paste0(condition2,"_counts")),!!rlang::sym(paste0(condition1,"_polya_median")),!!rlang::sym(paste0(condition2,"_polya_median")),p.value,padj)
             values$polya_table_for_volcano <- polya_stats$summary %>% dplyr::select(transcript,fold_change,padj,significance)
             values$condition1 <- input$condition1_diff_exp
             values$condition2 <- input$condition2_diff_exp
-            incProgress(3/20)
+            shiny::incProgress(3/20)
         })
       }
       else {
-        showNotification("Differential analysis is not possible when only single sample is present",closeButton=TRUE,type="error")
+        shiny::showNotification("Differential analysis is not possible when only single sample is present",closeButton=TRUE,type="error")
       }
     })
 
@@ -407,7 +407,7 @@ nanoTailApp <- function(polya_table) {
         plotly::ggplotly(volcanoPlot)
       }
       else {
-        showNotification("Launch differential expression analysis first",closeButton=TRUE,type="warning")
+        shiny::showNotification("Launch differential expression analysis first",closeButton=TRUE,type="warning")
         suppressWarnings(plotly::plotly_empty())
       }
 
@@ -423,55 +423,55 @@ nanoTailApp <- function(polya_table) {
         plotly::ggplotly(MAplot)
       }
       else {
-        showNotification("Launch differential expression analysis first",closeButton=TRUE,type="warning")
+        shiny::showNotification("Launch differential expression analysis first",closeButton=TRUE,type="warning")
         plotly::plotly_empty()
       }
 
     })
 
     # Calculate differential expression if action button was clicked
-    observeEvent(input$compute_diff_exp,
+    shiny::observeEvent(input$compute_diff_exp,
     {
       if(number_of_samples>1) {
-        withProgress(message="Computing Differential epxression using binomial test...",
+        shiny::withProgress(message="Computing Differential epxression using binomial test...",
           detail = "This step can take a little while",
           value = 0.05,min=0,max=1,
           {
 
             values$polya_table_summarized <- summarize_polya(values$polya_table,summary_factors = c(input$groupingFactor))
-            incProgress(4/20)
+            shiny::incProgress(4/20)
             values$polya_table_summarized_per_sample <- summarize_polya(values$polya_table,summary_factors = "sample_name")
-            incProgress(4/20)
+            shiny::incProgress(4/20)
 
             values$diffexp_summary_table <- calculate_diff_exp_binom(values$polya_table_summarized,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,summarized_input=TRUE)
-            incProgress(10/20)
+            shiny::incProgress(10/20)
             values$condition1 <- input$condition1_diff_exp
             values$condition2 <- input$condition2_diff_exp
             values$diff_exp_grouping_factor = input$groupingFactor
         })
       }
       else {
-        showNotification("Differential analysis is not possible when only single sample is present",closeButton=TRUE,type="error")
+        shiny::showNotification("Differential analysis is not possible when only single sample is present",closeButton=TRUE,type="error")
       }
     })
 
     # show scatter plot of counts if action button was clicked
-    observeEvent(input$show_scatter_plot,
+    shiny::observeEvent(input$show_scatter_plot,
     {
       if(number_of_samples>1) {
-        withProgress(message="Computing data for scatter counts plot...",
+        shiny::withProgress(message="Computing data for scatter counts plot...",
           detail = "This step can take a little while",
           value = 0.05,min=0,max=1,
           {
             values$polya_table_summarized_scatter <- summarize_polya(values$polya_table,summary_factors = c(input$groupingFactor))
-            incProgress(18/20)
+            shiny::incProgress(18/20)
             values$condition1_scatter <- input$condition1_diff_exp
             values$condition2_scatter <- input$condition2_diff_exp
             values$groupingFactor_scatter = input$groupingFactor
         })
       }
       else {
-        showNotification("Scatter plot cannot be shown when only single sample is present",closeButton=TRUE,type="error")
+        shiny::showNotification("Scatter plot cannot be shown when only single sample is present",closeButton=TRUE,type="error")
       }
     })
 
@@ -480,50 +480,50 @@ nanoTailApp <- function(polya_table) {
     ## Basic QC Info section  ---------------------------------------------------------
 
 
-    output$numberOfSamples <- renderInfoBox({
-      infoBox(
+    output$numberOfSamples <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Samples in the analysis:  ", number_of_samples, icon = icon("vials"),
         color = "yellow"
       )
     })
 
-    output$numberOfTranscripts <- renderInfoBox({
-      infoBox(
+    output$numberOfTranscripts <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Transcripts analyzed ", number_of_transcripts, icon = icon("dna"),
         color = "blue"
       )
     })
 
-    output$numberOfAllReads <- renderInfoBox({
-      infoBox(
+    output$numberOfAllReads <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Reads processed ", sum(values$processing_info_global$n), icon = icon("stream"),
         color = "black"
       )
     })
 
-    output$numberOfPassReads <- renderInfoBox({
-      infoBox(
+    output$numberOfPassReads <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Reads passing filters ", values$processing_info_global_spread$PASS, icon = icon("check"),
         color = "green"
       )
     })
 
-    output$numberOfAdapterReads <- renderInfoBox({
-      infoBox(
+    output$numberOfAdapterReads <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Adapter reads ", values$processing_info_global_spread$ADAPTER, icon = icon("times"),
         color = "red"
       )
     })
 
-    output$numberOfReadLoadFailedReads <- renderInfoBox({
-      infoBox(
+    output$numberOfReadLoadFailedReads <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "Reads failed to load ", values$processing_info_global_spread$READ_FAILED_LOAD, icon = icon("times"),
         color = "red"
       )
     })
 
-    output$numberOfNoregionReads <- renderInfoBox({
-      infoBox(
+    output$numberOfNoregionReads <- shinydashboard::renderInfoBox({
+      shinydashboard::infoBox(
         "NoRegion reads ", values$processing_info_global_spread$NOREGION, icon = icon("times"),
         color = "red"
       )

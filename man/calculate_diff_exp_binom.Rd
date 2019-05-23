@@ -4,8 +4,9 @@
 \alias{calculate_diff_exp_binom}
 \title{Performs differential expression analysis}
 \usage{
-calculate_diff_exp_binom(polya_data, grouping_factor, condition1,
-  condition2, alpha = 0.05, summarized_input = FALSE)
+calculate_diff_exp_binom(polya_data, grouping_factor = NA,
+  condition1 = NA, condition2 = NA, alpha = 0.05,
+  summarized_input = FALSE)
 }
 \arguments{
 \item{polya_data}{polya_data tibble}

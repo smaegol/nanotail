@@ -7,7 +7,7 @@
 plot_polya_distribution(polya_data, groupingFactor = NA,
   parameter_to_plot = "polya_length", scale_x_limit_low = NA,
   scale_x_limit_high = NA, color_palette = "Set1",
-  reverse_palette = 0, plot_title = NA, condition1 = NA,
+  reverse_palette = FALSE, plot_title = NA, condition1 = NA,
   condition2 = NA)
 }
 \arguments{
