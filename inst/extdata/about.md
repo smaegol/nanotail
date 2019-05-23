@@ -4,7 +4,7 @@ The goal of **NanoTail** is to provide a set of functions to manipulate and anal
 
 ## Usage
 
-Please use navigation options in the sidebar (located on the left) to access analysis functions and plots. NanoTail currently supports differential adenylation analysis using Wilcoxon and Kolmogorov-Smirnov tests and differential expression analysis using binomTest from EdgeR. More analysis options are in the development.
+Please use navigation options in the sidebar (located on the left) to access analysis functions and plots. NanoTail currently supports differential adenylation analysis using Wilcoxon and Kolmogorov-Smirnov tests and differential expression analysis using binomTest from EdgeR. More analysis options are in the development and are expected to be available soon.
 
 ## Citation
 

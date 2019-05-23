@@ -18,11 +18,11 @@ nanoTailApp <- function(polya_table) {
          install.packages('shiny')")
   }
   if ( !requireNamespace('shinycssloaders',quietly = TRUE) ) {
-    stop("pcaExplorer requires 'shinycssloaders'. Please install it using
+    stop("NanoTail requires 'shinycssloaders'. Please install it using
          install.packages('shinycssloaders')")
   }
   if ( !requireNamespace('plotly',quietly = TRUE) ) {
-    stop("pcaExplorer requires 'plotly'. Please install it using
+    stop("NanoTail requires 'plotly'. Please install it using
          install.packages('plotly')")
   }
 

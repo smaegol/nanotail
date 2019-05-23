@@ -45,6 +45,10 @@ nanoTailApp(polya_table = polya_data_multiple)
 
 ```
 
+## Statistical analysis of polyA predictions
+
+NanoTail is intended to analyze differential adenylation. For this purpose 3 statistical tests can be employed, allowing or comparison of polyA lengths of individual transcripts between selected conditions. Differential adenylation analysis can be performed with the `calculate_polya_stats` function.
+
 
 
 ## Citation
