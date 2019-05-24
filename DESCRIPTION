@@ -8,8 +8,8 @@ Authors@R:
            email = "p.krawczyk@ibb.waw.pl",
            comment = c(ORCID = "0000-0001-9531-1298"))
 Maintainer: <p.krawczyk@ibb.waw.pl>
-Description: Provides functions to analyze and visualize Nanopolish-based polyA lengths estimations
-License: GPL-3
+Description: Provides functions for visualization and exploratory analysis of Oxford Nanopore direct RNA seq and Nanopolish based polyA lengths predictions.
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -18,7 +18,8 @@ biocViews:
 Depends: 
     R (>= 3.5)
 Suggests: 
-    annotables (>= 0.1.91)
+    annotables (>= 0.1.91),
+    ggbiplot (>= 0.55)
 Imports: 
     magrittr (>= 1.5),
     tidyr (>= 0.8.2),
@@ -41,5 +42,8 @@ Imports:
     testthat (>= 2.0.1),
     shinycssloaders (>= 0.2.0),
     DT (>= 0.5),
-    stringr (>= 1.4.0)
-Remotes: stephenturner/annotables
+    stringr (>= 1.4.0),
+    rlang (>= 0.3.0.1)
+Remotes: 
+    stephenturner/annotables
+    vqv/ggbiplot

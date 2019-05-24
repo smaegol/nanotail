@@ -109,7 +109,6 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
   }
 
   background_pals <- unlist(lapply(X = background_pals, FUN = linear_gradient))
-  head(background_pals, 3)
 
   colortext_pals <- rep(c("white", "black", "black"), times = sapply(colors_pal, length))
 
@@ -147,17 +146,17 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     shinydashboard::dashboardSidebar(
       width = 180,
       shinydashboard::sidebarMenu(id="nanotail_menu",
-        shinydashboard::menuItem("QC info", icon = icon("info-square"), tabName = "basicInfo"),
-        shinydashboard::menuItem("Global polyA distribution", icon = icon("chart-line-down"), tabName = "global_distr"),
-        shinydashboard::menuItem("Differential adenylation", icon = icon("dna"), tabName = "diff_polya"),
-        shinydashboard::menuItem("Differential expression", icon = icon("dna"), tabName = "diff_exp"),
-        shinydashboard::menuItem("Plot settings", icon = icon("settings"), tabName = "plot_settings"),
-        shinydashboard::menuItem("About", tabName = "dashboard", icon = icon("dashboard"))
+        shinydashboard::menuItem("QC info", icon = shiny::icon("info-square"), tabName = "basicInfo"),
+        shinydashboard::menuItem("Global polyA distribution", icon = shiny::icon("chart-line"), tabName = "global_distr"),
+        shinydashboard::menuItem("Differential adenylation", icon = shiny::icon("dna"), tabName = "diff_polya"),
+        shinydashboard::menuItem("Differential expression", icon = shiny::icon("dna"), tabName = "diff_exp"),
+        shinydashboard::menuItem("Plot settings", icon = shiny::icon("settings"), tabName = "plot_settings"),
+        shinydashboard::menuItem("About", tabName = "dashboard", icon = shiny::icon("info"))
       ),
-      selectInput("groupingFactor","Group by",choices=polya_table_passed %>% dplyr::select_if(is.factor) %>% colnames),
-      uiOutput("condition1UI"),
-      uiOutput("condition2UI"),
-      checkboxInput("plot_only_selected_conditions","Plot only selected conditions",value=FALSE)
+      shiny::selectInput("groupingFactor","Group by",choices=polya_table_passed %>% dplyr::select_if(is.factor) %>% colnames),
+      shiny::uiOutput("condition1UI"),
+      shiny::uiOutput("condition2UI"),
+      shiny::checkboxInput("plot_only_selected_conditions","Plot only selected conditions",value=FALSE)
     ),
 
     # dashboard body definition ---------------------------------------------------------
@@ -166,7 +165,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
         shinydashboard::tabItem(tabName = "dashboard",
           shiny::fillPage(padding = 0, title = NULL, bootstrap = F, theme = NULL,
              shiny::wellPanel(style = "background-color: #ffffff; overflow-y:scroll; max-height: 750px;",
-                       includeMarkdown(system.file("extdata", "about.md",package = "nanotail")))
+                       shiny::includeMarkdown(system.file("extdata", "about.md",package = "nanotail")))
           )),
         shinydashboard::tabItem(tabName = "basicInfo",
           shiny::fluidRow(
@@ -175,12 +174,12 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
             shinydashboard::infoBoxOutput("numberOfAllReads")),
           shiny::fluidRow(
             shiny::column(1),
-            shiny::column(7,fluidRow(h4("Per sample plot:")),
+            shiny::column(7,shiny::fluidRow(shiny::h4("Per sample plot:")),
                shiny::fluidRow(
                   plotly::plotlyOutput("nanopolish_qc_summary_plot"),
                   shiny::checkboxInput("show_frequency_plot_nanopolioshQC",label = "Show QC as frequencies?",value = TRUE))),
             shiny::column(1),
-            shiny::column(3,fluidRow(h4("Information for all samples:")),
+            shiny::column(3,shiny::fluidRow(shiny::h4("Information for all samples:")),
                shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfPassReads",width = NULL)),
                shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfAdapterReads",width = NULL)),
                shiny::fluidRow(shinydashboard::infoBoxOutput("numberOfReadLoadFailedReads",width = NULL)),
@@ -200,20 +199,20 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
             shiny::sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
             shiny::sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50))),
         shinydashboard::tabItem(tabName = "global_distr",
-          h2("Global comparison"),
+          shiny::h2("Global comparison"),
           shiny::fluidRow(
             shinydashboard::box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE))),
         shinydashboard::tabItem(tabName = "diff_polya",
-          fluidRow(
+          shiny::fluidRow(
             shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
             shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
                    shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
                    shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
                    shiny::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(
-            shinydashboard::box(actionButton("compute_diff_polya",
-                             HTML("Compute Polya statistics"),
-                             icon = icon("spinner")),
+            shinydashboard::box(shiny::actionButton("compute_diff_polya",
+                             shiny::HTML("Compute Polya statistics"),
+                             icon = shiny::icon("spinner")),
                 shiny::checkboxInput("use_dwell_time_for_statistics",label = "Use dwell time instead of calculated polya_length for statistics",value = FALSE),
                 shiny::selectInput("polya_stat_test","statistical test to use",choices = c("Wilcoxon","KS"),selected = "Wilcoxon"),
                 shiny::sliderInput("min_reads_for_polya_stats","Minimal count of reads per transcript",0,100,10,1),collapsible = TRUE,width=12))),
@@ -222,18 +221,18 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
             shinydashboard::box(DT::dataTableOutput('diff_exp_table')),
             shinydashboard::tabBox(title = "plots",id="tabset2",height="500px",
                   #tabPanel("pca_biplot",plotOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
-                  shiny::tabPanel("scatter plot of counts",actionButton("show_scatter_plot",
-                                                      HTML("Show scatter plot"),
-                                                      icon = icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
+                  shiny::tabPanel("scatter plot of counts",shiny::actionButton("show_scatter_plot",
+                                                      shiny::HTML("Show scatter plot"),
+                                                      icon = shiny::icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
                   shiny::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
                   shiny::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
-          shiny::fluidRow(actionButton("compute_diff_exp",
-                                 HTML("Compute Differential Expression using Binomial Test"),
-                                 icon = icon("spinner")))))))
+          shiny::fluidRow(shiny::actionButton("compute_diff_exp",
+                                 shiny::HTML("Compute Differential Expression using Binomial Test"),
+                                 icon = shiny::icon("spinner")))))))
 
 
   # call to shiny app and server-siude functions
-  shinyApp(ui = nanotail_shiny_ui, server = function(input, output) {
+  shiny::shinyApp(ui = nanotail_shiny_ui, server = function(input, output) {
 
 
     ## Reactive values definition  ---------------------------------------------------------
@@ -267,12 +266,12 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     ## Generate select  inputs for conditions used for comparison, based on selected groupingFactor:  ---------------------------------------------------------
     output$condition1UI <- shiny::renderUI({
       group_factor = input$groupingFactor
-      selectizeInput("condition1_diff_exp","Condition 1",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[1])
+      shiny::selectizeInput("condition1_diff_exp","Condition 1",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[1])
 
     })
     output$condition2UI <- shiny::renderUI({
       group_factor = input$groupingFactor
-      selectizeInput("condition2_diff_exp","Condition 2",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[2])
+      shiny::selectizeInput("condition2_diff_exp","Condition 2",choices=levels(polya_table_passed[[group_factor]]),selected = levels(polya_table_passed[[group_factor]])[2])
 
     })
 
@@ -283,7 +282,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
       } else {
         txt_ <- "No"
       }
-      HTML(paste("<p>Is colour scale colour blind friendly?<b>", txt_, "</b></p>"))
+      shiny::HTML(paste("<p>Is colour scale colour blind friendly?<b>", txt_, "</b></p>"))
     })
 
 
@@ -493,49 +492,49 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
     output$numberOfSamples <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Samples in the analysis:  ", number_of_samples, icon = icon("vials"),
+        "Samples in the analysis:  ", number_of_samples, icon = shiny::icon("vials"),
         color = "yellow"
       )
     })
 
     output$numberOfTranscripts <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Transcripts analyzed ", number_of_transcripts, icon = icon("dna"),
+        "Transcripts analyzed ", number_of_transcripts, icon = shiny::icon("dna"),
         color = "blue"
       )
     })
 
     output$numberOfAllReads <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Reads processed ", sum(values$processing_info_global$n), icon = icon("stream"),
+        "Reads processed ", sum(values$processing_info_global$n), icon = shiny::icon("stream"),
         color = "black"
       )
     })
 
     output$numberOfPassReads <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Reads passing filters ", values$processing_info_global_spread$PASS, icon = icon("check"),
+        "Reads passing filters ", values$processing_info_global_spread$PASS, icon = shiny::icon("check"),
         color = "green"
       )
     })
 
     output$numberOfAdapterReads <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Adapter reads ", values$processing_info_global_spread$ADAPTER, icon = icon("times"),
+        "Adapter reads ", values$processing_info_global_spread$ADAPTER, icon = shiny::icon("times"),
         color = "red"
       )
     })
 
     output$numberOfReadLoadFailedReads <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "Reads failed to load ", values$processing_info_global_spread$READ_FAILED_LOAD, icon = icon("times"),
+        "Reads failed to load ", values$processing_info_global_spread$READ_FAILED_LOAD, icon = shiny::icon("times"),
         color = "red"
       )
     })
 
     output$numberOfNoregionReads <- shinydashboard::renderInfoBox({
       shinydashboard::infoBox(
-        "NoRegion reads ", values$processing_info_global_spread$NOREGION, icon = icon("times"),
+        "NoRegion reads ", values$processing_info_global_spread$NOREGION, icon = shiny::icon("times"),
         color = "red"
       )
     })

@@ -261,7 +261,7 @@ plot_nanopolish_qc <- function(nanopolish_processing_info,color_palette = "Set1"
 
 #' Plots volcano plot of differential expression analysis
 #'
-#' @param binom_test_output a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}
+#' @param input_data a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}
 #' @param color_palette RColorBrewer palette to use
 #' @param reverse_palette should the palette be reserved
 #'
@@ -298,7 +298,10 @@ plot_volcano <- function(input_data,color_palette = "Set1", reverse_palette = FA
 
 #' Plots MA plot of differential expression analysis
 #'
-#' @param binom_test_output a table with output from \link{calculate_diff_exp_binom}
+#' Crates simple MA plot, with log10(mean expression) on the X-axis and log2(fold_change) on the Y-axis
+#'
+#'
+#' @param input_data a table with output from \link{calculate_diff_exp_binom}
 #' @param color_palette RColorBrewer palette to use
 #' @param reverse_palette should the palette be reserved
 #'

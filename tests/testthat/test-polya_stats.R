@@ -17,6 +17,11 @@ test_that("Valid input parameters provided for calculate_polya_stats()",{
   expect_named(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test="glm"),c("summary","summary_short","stats"),ignore.order = TRUE)
   expect_error(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test = "ttest"),"Please provide one of available statistical tests")
 
+  expect_named(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test="glm",custom_glm_formula = "polya_length ~ group"),c("summary","summary_short","stats"),ignore.order = TRUE)
+  expect_named(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test="glm",custom_glm_formula = polya_length ~ group),c("summary","summary_short","stats"),ignore.order = TRUE)
+  expect_error(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test="glm",custom_glm_formula = polya_length ~ group + group2))
+  expect_error(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",stat_test="glm",custom_glm_formula = polya_length ~ NULL))
+
   expect_named(calculate_polya_stats(example_valid_polya_table_3levels,grouping_factor="group",condition1 = "group1",condition2 = "group2"),c("summary","summary_short","stats"),ignore.order = TRUE)
   expect_error(calculate_polya_stats(example_valid_polya_table_3levels,grouping_factor="group",condition1 = "group1",condition2 = "nonexistent_group"))
   expect_error(calculate_polya_stats(example_valid_polya_table_3levels,grouping_factor="group",condition2 = "group2",condition1 = "nonexistent_group"))
@@ -29,6 +34,19 @@ test_that("Valid input parameters provided for calculate_polya_stats()",{
   expect_error(calculate_polya_stats(example_valid_polya_table,grouping_factor="group",min_reads = NULL))
 })
 
+
+test_that("Valid input parameters provided for calculate_pca()",{
+
+  summarized_example_valid_polya_table <- summarize_polya(example_valid_polya_table,summary_factors = "sample_name")
+
+  expect_error(calculate_pca())
+  expect_error(calculate_pca(empty_polya_data_table))
+  expect_error(calculate_pca(example_valid_polya_table))
+  expect_error(calculate_pca(example_valid_polya_table,parameter = "polya_imagined_summary"))
+  expect_named(calculate_pca(summarized_example_valid_polya_table),c("pca","sample_names"),ignore.order = TRUE)
+  expect_error(calculate_pca(summarized_example_valid_polya_table %>% dplyr::select(-sample_name)))
+  expect_error(calculate_pca(summarized_example_valid_polya_table %>% dplyr::ungroup() %>% dplyr::select(-transcript)))
+})
 
 
 test_that("summarize polyA is working",{

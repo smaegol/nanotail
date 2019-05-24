@@ -17,5 +17,5 @@ calculate_pca(polya_data_summarized, parameter = "polya_median")
 pca object
 }
 \description{
-Calculates PCA using polya predictions or counts
+Needs polyA predictions table summarized by \link{summarize_polya} function, using "sample_name" as summary_factors
 }

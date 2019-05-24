@@ -65,13 +65,14 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
 
   ###
 
-  #test_formula = reformulate(grouping_factor,polya_length)
-
   if (!missing(custom_glm_formula)) {
+    custom_glm_formula <- substitute(custom_glm_formula)
     glm_groups<-all.vars(as.formula(custom_glm_formula))[-1]
+    assertthat::assert_that(length(glm_groups)>0,msg="Please provide valid custom_glm_formula (with the correct categorical explanatory variable)")
+    assertthat::assert_that(all(glm_groups %in% colnames(polya_data)),msg = "worng custom glm formula. Please provide valid column names as explanatory variable")
     polya_data_complete_cases <-
       polya_data %>% dplyr::group_by(.dots = c("transcript", glm_groups)) %>% dplyr::add_count() %>% dplyr::filter(n > min_reads) %>% dplyr::slice(1) %>%
-      dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = n()) %>% dplyr::filter(nn > 2^(length(glm_groups)-1))
+      dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = dplyr::n()) %>% dplyr::filter(nn > 2^(length(glm_groups)-1))
   }
 
 
@@ -79,7 +80,7 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
   # leave only those tanscripts which were identified in all conditions
   polya_data_complete_cases <-
     polya_data %>% dplyr::group_by(.dots = c("transcript", grouping_factor)) %>% dplyr::add_count() %>% dplyr::filter(n > min_reads) %>% dplyr::slice(1) %>%
-    dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = n()) %>% dplyr::filter(nn > 1)
+    dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = dplyr::n()) %>% dplyr::filter(nn > 1)
   }
   # All 0 values in polya_length transformed to 1 (log2(1)=0) to avoid errors in glm call
   polya_data_complete <-
@@ -204,6 +205,8 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
 
 #' Calculates PCA using polya predictions or counts
 #'
+#' Needs polyA predictions table summarized by \link{summarize_polya} function, using "sample_name" as summary_factors
+#'
 #' @param polya_data_summarized summarized polyA predictions. Generate use \link{summarize_polya}
 #' @param parameter - parameter used for PCA calculation. One of: polya_median,polya_mean,polya_gm_mean,counts
 #'
@@ -213,7 +216,16 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
 calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 
 
-  assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset"))
+  if (missing(polya_data_summarized)) {
+    stop("Summarized PolyA predictions are missing. Please provide a valid polya_data_summarized argument",
+         call. = FALSE)
+  }
+
+  assertthat::assert_that(assertive::has_rows(polya_data_summarized),msg = "Empty data.frame provided as an input")
+  assertthat::assert_that(assertive::is_character(parameter),msg = "Non-character argument is not alowed for `parameter`.")
+  assertthat::assert_that("transcript" %in% colnames(polya_data_summarized),msg=paste0("Required `transcript`` column is missing from input dataset."))
+  assertthat::assert_that("sample_name" %in% colnames(polya_data_summarized),msg=paste0("Required `sample_name` column is missing from input dataset."))
+  assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset."))
 
   polya_data_summarized <- polya_data_summarized %>% dplyr::select(transcript,sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
   polya_data_summarized[is.na(polya_data_summarized)] <- 0

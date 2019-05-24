@@ -7,15 +7,15 @@
 plot_MA(input_data, color_palette = "Set1", reverse_palette = FALSE)
 }
 \arguments{
+\item{input_data}{a table with output from \link{calculate_diff_exp_binom}}
+
 \item{color_palette}{RColorBrewer palette to use}
 
 \item{reverse_palette}{should the palette be reserved}
-
-\item{binom_test_output}{a table with output from \link{calculate_diff_exp_binom}}
 }
 \value{
 \link[ggplot2]{ggplot} object
 }
 \description{
-Plots MA plot of differential expression analysis
+Crates simple MA plot, with log10(mean expression) on the X-axis and log2(fold_change) on the Y-axis
 }
