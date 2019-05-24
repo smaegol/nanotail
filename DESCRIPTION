@@ -7,6 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "p.krawczyk@ibb.waw.pl",
            comment = c(ORCID = "0000-0001-9531-1298"))
+Maintainer: <p.krawczyk@ibb.waw.pl>
 Description: Provides functions to analyze and visualize Nanopolish-based polyA lengths estimations
 License: GPL-3
 Encoding: UTF-8
