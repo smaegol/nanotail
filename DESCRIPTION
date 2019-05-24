@@ -45,5 +45,5 @@ Imports:
     stringr (>= 1.4.0),
     rlang (>= 0.3.0.1)
 Remotes: 
-    stephenturner/annotables
+    stephenturner/annotables,
     vqv/ggbiplot
