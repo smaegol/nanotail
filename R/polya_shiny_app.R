@@ -70,24 +70,33 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
   ### it is taken from shinyWidgets website: https://dreamrs.github.io/shinyWidgets/articles/palette_picker.html
 
   # List of palettes
-  colors_pal <- lapply(
-    X = split(
-      x = RColorBrewer::brewer.pal.info,
-      f = factor(RColorBrewer::brewer.pal.info$category, labels = c("Diverging", "Qualitative", "Sequential"))
-    ),
-    FUN = rownames
-  )
+
+
+  colors_pal <- list()
+  colors_pal$ggsci_based_colors <- c("npg", "aaas", "nejm", "lancet", "jama",
+                                  "jco", "ucscgb", "d3", "locuszoom",
+                                  "igv", "uchicago", "startrek", "tron",
+                                  "futurama", "rickandmorty", "simpsons",
+                                  "gsea")
+  colors_pal$RColorBrewer_qualitative = rownames(RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category=="qual",])
+
 
   # Get all colors given a palette name(s)
   get_brewer_name <- function(name) {
     pals <- RColorBrewer::brewer.pal.info[rownames(RColorBrewer::brewer.pal.info) %in% name, ]
-    res <- lapply(
-      X = seq_len(nrow(pals)),
-      FUN = function(i) {
-        RColorBrewer::brewer.pal(n = pals$maxcolors[i], name = rownames(pals)[i])
-      }
-    )
-    unlist(res)
+    if(nrow(pals)>0) {
+      res <- lapply(
+        X = seq_len(nrow(pals)),
+        FUN = function(i) {
+          RColorBrewer::brewer.pal(n = pals$maxcolors[i], name = rownames(pals)[i])
+        }
+      )
+      unlist(res)
+    }
+    else {
+        eval(parse(text = paste0("ggsci::pal_",name,"()")))(7)
+    }
+
   }
 
   background_pals <- sapply(unlist(colors_pal, use.names = FALSE), get_brewer_name)
@@ -110,7 +119,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
   background_pals <- unlist(lapply(X = background_pals, FUN = linear_gradient))
 
-  colortext_pals <- rep(c("white", "black", "black"), times = sapply(colors_pal, length))
+  colortext_pals <- rep(c("white", "black"), times = sapply(colors_pal, length))
 
   ### !<- colorpicker end ->! ###
 
@@ -192,22 +201,27 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
                   content = sprintf(
                     "<div style='width:100%%;padding:5px;border-radius:4px;background:%s;color:%s'>%s</div>",
                     unname(background_pals), colortext_pals, names(background_pals)))),
-            shiny::uiOutput("Colorblind"),
-            shiny::checkboxInput("reverse", "reverse color scale", value = FALSE),
+            #shiny::uiOutput("Colorblind"),
+
             shiny::sliderInput("scale_limit_low","Plot scale limit low",0,1024,0,10),
             shiny::sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10),
             shiny::sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
-            shiny::sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50))),
+            shiny::sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50),
+            shiny::selectInput("center_values_for_distribution_plot",choices=c("none","median","mean","gm_mean"),selected = "median",label = "Show vertical lines with centered values on density plots?")
+            )),
         shinydashboard::tabItem(tabName = "global_distr",
           shiny::h2("Global comparison"),
           shiny::fluidRow(
+            #shinydashboard::box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE))),
             shinydashboard::box(plotly::plotlyOutput('polya_global') %>% shinycssloaders::withSpinner(type = 4),collapsible=TRUE))),
         shinydashboard::tabItem(tabName = "diff_polya",
           shiny::fluidRow(
             shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
             shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
-                   shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4)),
-                   shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)),
+                   shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4),
+                                   shiny::checkboxInput("violin_instead_of_boxplot",value=FALSE,label = "Use violin plot instead of boxplot?")),
+                   shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)
+                                   ),
                    shiny::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(
             shinydashboard::box(shiny::actionButton("compute_diff_polya",
@@ -298,10 +312,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     output$polya_global = plotly::renderPlotly({
 
       if (input$plot_only_selected_conditions) {
-        global_distribution_plot <- plot_polya_distribution(polya_data = polya_table_passed,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+        global_distribution_plot <- plot_polya_distribution(polya_data = polya_table_passed,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
       }
       else {
-        global_distribution_plot <- plot_polya_distribution(polya_data = polya_table_passed,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse)
+        global_distribution_plot <- plot_polya_distribution(polya_data = polya_table_passed,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,show_center_values=input$center_values_for_distribution_plot)
       }
       plotly::ggplotly(global_distribution_plot)
 
@@ -320,10 +334,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
         selected_transcript = summary_table[selected_row,]$transcript
         data_transcript = data_transcript()
         if (input$plot_only_selected_conditions) {
-          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, violin=input$violin_instead_of_boxplot)
         }
         else {
-          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse,plot_title = selected_transcript)
+          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot)
         }
 
         plotly::ggplotly(polya_boxplot)
@@ -343,10 +357,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
         selected_transcript = summary_table[selected_row,]$transcript
         data_transcript = data_transcript()
         if (input$plot_only_selected_conditions) {
-          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp)
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
         }
         else {
-          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,reverse_palette = input$reverse, plot_title = selected_transcript)
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,show_center_values=input$center_values_for_distribution_plot)
         }
         plotly::ggplotly(transcript_distribution_plot)
       }
@@ -360,7 +374,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
       # show only if differential adenylation analysis was already done
       if("fold_change" %in% colnames(values$polya_table_for_volcano)) {
-        volcanoPlot <- plot_volcano(input_data =values$polya_table_for_volcano,color_palette = input$col_palette,reverse_palette = input$reverse)
+        volcanoPlot <- plot_volcano(input_data =values$polya_table_for_volcano,color_palette = input$col_palette)
         plotly::ggplotly(volcanoPlot)
       }
       else {
@@ -402,7 +416,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     # Show scatter plot of raw counts
     output$counts_plot <- plotly::renderPlotly({
 
-      counts_scatter_plot <- plot_counts_scatter(polya_data = values$polya_table_summarized_scatter,groupingFactor = values$groupingFactor_scatter,color_palette = input$col_palette,reverse_palette = input$reverse,condition1 = values$condition1_scatter, condition2 = values$condition2_scatter, min_counts = input$counts_scatter_low_value, max_counts = input$counts_scatter_high_value)
+      counts_scatter_plot <- plot_counts_scatter(polya_data = values$polya_table_summarized_scatter,groupingFactor = values$groupingFactor_scatter,color_palette = input$col_palette,condition1 = values$condition1_scatter, condition2 = values$condition2_scatter, min_counts = input$counts_scatter_low_value, max_counts = input$counts_scatter_high_value)
       plotly::ggplotly(counts_scatter_plot)
 
 
@@ -413,7 +427,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
       # show only if differential expression analysis was already done
       if("fold_change" %in% colnames(values$diffexp_summary_table)) {
-        volcanoPlot <- plot_volcano(input_data =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
+        volcanoPlot <- plot_volcano(input_data =values$diffexp_summary_table,color_palette = input$col_palette)
         plotly::ggplotly(volcanoPlot)
       }
       else {
@@ -429,7 +443,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
       # show only if differential expression analysis was already done
       if("fold_change" %in% colnames(values$diffexp_summary_table)) {
-        MAplot <- plot_MA(input_data =values$diffexp_summary_table,color_palette = input$col_palette,reverse_palette = input$reverse)
+        MAplot <- plot_MA(input_data =values$diffexp_summary_table,color_palette = input$col_palette)
         plotly::ggplotly(MAplot)
       }
       else {
@@ -542,7 +556,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     #Show Nanopolish QC summary plot
     output$nanopolish_qc_summary_plot <- plotly::renderPlotly({
 
-      nanopolish_qc_summary_plot<-plot_nanopolish_qc(values$processing_info_per_sample,color_palette =  input$col_palette,reverse_palette = input$reverse, frequency=input$show_frequency_plot_nanopolioshQC)
+      nanopolish_qc_summary_plot<-plot_nanopolish_qc(values$processing_info_per_sample,color_palette =  input$col_palette, frequency=input$show_frequency_plot_nanopolioshQC)
       plotly::ggplotly(nanopolish_qc_summary_plot)
 
     })

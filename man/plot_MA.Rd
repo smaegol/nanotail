@@ -4,14 +4,12 @@
 \alias{plot_MA}
 \title{Plots MA plot of differential expression analysis}
 \usage{
-plot_MA(input_data, color_palette = "Set1", reverse_palette = FALSE)
+plot_MA(input_data, ...)
 }
 \arguments{
 \item{input_data}{a table with output from \link{calculate_diff_exp_binom}}
 
-\item{color_palette}{RColorBrewer palette to use}
-
-\item{reverse_palette}{should the palette be reserved}
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object

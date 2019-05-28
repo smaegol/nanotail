@@ -39,7 +39,7 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA) {
         transcript_names <- gsub(".*?\\|.*?\\|.*?\\|.*?\\|.*?\\|(.*?)\\|.*", "\\1", polya_data$contig)
         polya_data$transcript <- transcript_names
         ensembl_transcript_ids <- gsub("^(.*?)\\|.*\\|.*", "\\1", polya_data$contig)
-        ensembl_transcript_ids_short <- gsub("(.*)\\..", "\\1", ensembl_transcript_ids) # without version number
+        ensembl_transcript_ids_short <- gsub("(.*)\\..*", "\\1", ensembl_transcript_ids) # without version number
         polya_data$ensembl_transcript_id_full <- ensembl_transcript_ids
         polya_data$ensembl_transcript_id_short <- ensembl_transcript_ids_short
     }

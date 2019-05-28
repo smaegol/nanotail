@@ -4,6 +4,7 @@ library(assertthat)
 library(testthat)
 library(assertive)
 
+
 test_that("valid parameters are provided for nanoTailApp()",{
 
 
@@ -14,3 +15,5 @@ test_that("valid parameters are provided for nanoTailApp()",{
   expect_error(nanoTailApp(example_valid_polya_table %>% dplyr::select(-transcript)))
   expect_error(nanoTailApp(example_valid_polya_table %>% dplyr::select(-sample_name)))
 })
+
+

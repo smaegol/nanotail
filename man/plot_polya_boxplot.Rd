@@ -4,29 +4,21 @@
 \alias{plot_polya_boxplot}
 \title{Plots boxplot of estimated polya lengths}
 \usage{
-plot_polya_boxplot(polya_data, groupingFactor, scale_y_limit_low = NA,
-  scale_y_limit_high = NA, color_palette = "Set1",
-  reverse_palette = FALSE, plot_title = NA, condition1 = NA,
-  condition2 = NA)
+plot_polya_boxplot(polya_data, groupingFactor, condition1 = NA,
+  condition2 = NA, violin = FALSE, ...)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}
 
 \item{groupingFactor}{which factor to use for grouping}
 
-\item{scale_y_limit_low}{lower limit of Y axis}
-
-\item{scale_y_limit_high}{upper limit of Y axis}
-
-\item{color_palette}{RColorBrewer palette to use}
-
-\item{reverse_palette}{Should the palette be reversed?}
-
-\item{plot_title}{Plot title (optional)}
-
 \item{condition1}{First condition to include on the plot}
 
 \item{condition2}{Second condition to include on the plot}
+
+\item{violin}{Should violin plot be plotted instead of boxplot?}
+
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object

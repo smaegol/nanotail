@@ -4,17 +4,14 @@
 \alias{plot_nanopolish_qc}
 \title{Plot Nanopolish polya QC}
 \usage{
-plot_nanopolish_qc(nanopolish_processing_info, color_palette = "Set1",
-  reverse_palette = FALSE, frequency = TRUE)
+plot_nanopolish_qc(nanopolish_processing_info, frequency = TRUE, ...)
 }
 \arguments{
 \item{nanopolish_processing_info}{output of \link{get_nanopolish_processing_info}}
 
-\item{color_palette}{RcolorBrewer palette to use}
-
-\item{reverse_palette}{Should the palette be reversed}
-
 \item{frequency}{show frequency plot instead of counts plot}
+
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object
