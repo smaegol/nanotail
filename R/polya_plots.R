@@ -153,7 +153,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,condition1=NA,conditio
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,...) {
+plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,points_coloring_factor =NA, ...) {
 
 
   if (missing(polya_data_summarized)) {
@@ -165,8 +165,8 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
   assertthat::assert_that(!is.na(condition1),msg = "Please specify conditions for comparison")
   assertthat::assert_that(!is.na(condition2),msg = "Please specify conditions for comparison")
   assertthat::assert_that(!is.na(groupingFactor),msg = "Please specify groupingFactor")
-  assertthat::assert_that(condition1 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
-  assertthat::assert_that(condition2 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
+  assertthat::assert_that(condition1 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition1," is not a level of ",groupingFactor," (groupingFactor)"))
+  assertthat::assert_that(condition2 %in% levels(polya_data_summarized[[groupingFactor]]),msg=paste0(condition2," is not a level of ",groupingFactor," (groupingFactor)"))
   assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
   assertthat::assert_that("counts" %in% colnames(polya_data_summarized),msg = "Please provide summarized polya table (using summarize_polya()) as an input")
 
@@ -184,8 +184,14 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
     polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)<=max_counts,!!rlang::sym(condition2)<=max_counts)
   }
 
-  counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
-
+  if(!is.na(points_coloring_factor)){
+    assertthat::assert_that(points_coloring_factor %in% colnames(polya_data_summarized),msg = "Please provide valid points_coloring_factor as an input")
+    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2),color=!!rlang::sym(points_coloring_factor))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
+  }
+  else
+    {
+    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
+  }
 
   counts_scatter_plot <- .basic_aesthetics(counts_scatter_plot,...)
 
@@ -236,7 +242,7 @@ plot_nanopolish_qc <- function(nanopolish_processing_info, frequency=TRUE,...) {
     nanopolish_qc_plot <- ggplot2::ggplot(nanopolish_processing_info,ggplot2::aes(x=qc_tag,y=n)) + ggplot2::geom_bar(stat="identity")
   }
 
-  nanopolish_qc_plot <- .basic_aesthetics(nanopolish_qc_plot,...)
+  nanopolish_qc_plot <- .basic_aesthetics(nanopolish_qc_plot,color_mode = "fill",...)
   return(nanopolish_qc_plot)
 }
 
@@ -387,7 +393,7 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
 #'
 #' @return \link[ggplot2]{ggplot} object
 #'
-.basic_aesthetics <- function(ggplot_object,scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+.basic_aesthetics <- function(ggplot_object,scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA,color_mode="color")
 {
 
 
@@ -427,11 +433,21 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
     }
   }
 
-  if(color_palette %in% c(valid_color_palettes_ggsci)) {
-    ggplot_object <- ggplot_object + eval(parse(text = paste0("ggsci::scale_color_",color_palette,"()")))
+  if(color_mode %in% c("color","both")) {
+    if(color_palette %in% c(valid_color_palettes_ggsci)) {
+      ggplot_object <- ggplot_object + eval(parse(text = paste0("ggsci::scale_color_",color_palette,"()")))
+    }
+    else if (color_palette %in% valid_color_palettes_RColorBrewer) {
+      ggplot_object <- ggplot_object + ggplot2::scale_colour_brewer(palette = color_palette)
+    }
   }
-  else if (color_palette %in% valid_color_palettes_RColorBrewer) {
-    ggplot_object <- ggplot_object + ggplot2::scale_colour_brewer(palette = color_palette)
+  else if (color_mode %in% c("fill","both")) {
+    if(color_palette %in% c(valid_color_palettes_ggsci)) {
+      ggplot_object <- ggplot_object + eval(parse(text = paste0("ggsci::scale_fill_",color_palette,"()")))
+    }
+    else if (color_palette %in% valid_color_palettes_RColorBrewer) {
+      ggplot_object <- ggplot_object + ggplot2::scale_fill_brewer(palette = color_palette)
+    }
   }
 
   if(!is.na(plot_title)){
