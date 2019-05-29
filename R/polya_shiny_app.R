@@ -141,6 +141,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
   }
   initial_summary_table_counts <- polya_summary_table %>% dplyr::select(transcript,sample_name,counts) %>% tidyr::spread(sample_name,counts)
 
+  grouping_factor_levels <- polya_table_passed %>% dplyr::select_if(is.factor) %>% colnames
+
 
   nanotail_shiny_ui <- shinydashboard::dashboardPage(
     skin="blue",
@@ -159,10 +161,11 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
         shinydashboard::menuItem("Global polyA distribution", icon = shiny::icon("chart-line"), tabName = "global_distr"),
         shinydashboard::menuItem("Differential adenylation", icon = shiny::icon("dna"), tabName = "diff_polya"),
         shinydashboard::menuItem("Differential expression", icon = shiny::icon("dna"), tabName = "diff_exp"),
+        shinydashboard::menuItem("Annotation_analysis", icon = shiny::icon("dna"), tabName = "annotation_analysis"),
         shinydashboard::menuItem("Plot settings", icon = shiny::icon("settings"), tabName = "plot_settings"),
         shinydashboard::menuItem("About", tabName = "dashboard", icon = shiny::icon("info"))
       ),
-      shiny::selectInput("groupingFactor","Group by",choices=polya_table_passed %>% dplyr::select_if(is.factor) %>% colnames),
+      shiny::selectInput("groupingFactor","Group by",choices=grouping_factor_levels),
       shiny::uiOutput("condition1UI"),
       shiny::uiOutput("condition2UI"),
       shiny::checkboxInput("plot_only_selected_conditions","Plot only selected conditions",value=FALSE)
@@ -230,19 +233,23 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
                 shiny::checkboxInput("use_dwell_time_for_statistics",label = "Use dwell time instead of calculated polya_length for statistics",value = FALSE),
                 shiny::selectInput("polya_stat_test","statistical test to use",choices = c("Wilcoxon","KS"),selected = "Wilcoxon"),
                 shiny::sliderInput("min_reads_for_polya_stats","Minimal count of reads per transcript",0,100,10,1),collapsible = TRUE,width=12))),
-        shinydashboard::tabItem(tabName = "diff_exp",
+
+        shinydashboard::tabItem(tabName = "annotation_analysis",
           shiny::fluidRow(
-            shinydashboard::box(DT::dataTableOutput('diff_exp_table')),
-            shinydashboard::tabBox(title = "plots",id="tabset2",height="500px",
+            shinydashboard::box(DT::dataTableOutput('annotation_table')),
+            shinydashboard::tabBox(title = "annotation_plots",id="tabset3",height="500px",
                   #tabPanel("pca_biplot",plotOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
-                  shiny::tabPanel("scatter plot of counts",shiny::actionButton("show_scatter_plot",
-                                                      shiny::HTML("Show scatter plot"),
-                                                      icon = shiny::icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
-                  shiny::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
-                  shiny::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
-          shiny::fluidRow(shiny::actionButton("compute_diff_exp",
-                                 shiny::HTML("Compute Differential Expression using Binomial Test"),
-                                 icon = shiny::icon("spinner")))))))
+                  shiny::tabPanel("box_plot_of_annotations",plotly::plotlyOutput('annotations_box_plot') %>% shinycssloaders::withSpinner(type = 4),
+
+                                  shiny::uiOutput("select_annotation_factor_levelsUI")
+                                  ),
+                  shiny::tabPanel("distribution_plot_of_annotations",plotly::plotlyOutput('annotation_distribution_plot') %>% shinycssloaders::withSpinner(type = 4)))),
+          shiny::fluidRow(shiny::actionButton("get_annotables_annotation",
+                                 shiny::HTML("Annotate input dataset"),
+                                 icon = shiny::icon("spinner")),
+                          shiny::selectInput("annotables_genome",label="Annotables genome:",choices = c("bdgp6","grch38","grcm38","grch37","rnor6","galgal5","wbcel235","mmul801"),selected="grch38",multiple = FALSE,selectize = TRUE),
+                          shiny::uiOutput("select_annotation_factorUI")
+                          )))))
 
 
   # call to shiny app and server-siude functions
@@ -261,6 +268,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     values$processing_info_per_sample <- processing_info_per_sample
     values$processing_info_per_sample_spread <- processing_info_per_sample_spread
     values$diff_exp_grouping_factor = "sample_name"
+    values$polya_table_annotables_annotated <- polya_table_passed %>% dplyr::mutate(annotation_group=factor(gsub("^(.).*","\\1",transcript)))
 
     # get polyA data for currently selected transcript
     data_transcript <- shiny::reactive({
@@ -273,6 +281,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
       data_transcript
     })
+
 
 
     # UI elements rendering ---------------------------------------------------------
@@ -306,7 +315,9 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     ## Use DT::datatable for tables
     output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip'))
     output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"))
+    output$annotation_table = DT::renderDataTable(data_annotation(), server = TRUE, selection=list(mode = 'multiple',selected = 1,target = "row"))
 
+    annotation_proxy <- DT::dataTableProxy('annotation_table')
 
     ## Show global polyA distribution as density plot
     output$polya_global = plotly::renderPlotly({
@@ -561,6 +572,121 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
     })
 
+    ## Annotation analysis section ---------------------------------------------------------
+
+
+      data_selected_annotation <- shiny::reactive({
+        #summary_table = values$polya_table_annotated
+
+        selected_row <- input$annotation_table_rows_selected
+        data_annotation = data_annotation()
+        data_annotation = as.data.frame(data_annotation)
+        column_name = input$annotation_factor
+        print(paste0("column name: ",column_name))
+        selected_annotation = as.character(data_annotation[selected_row,column_name])
+        print("selected annotation:")
+        print(selected_annotation)
+        data_transcript = subset(values$polya_table_annotables_annotated, eval(parse(text=column_name)) %in% c(selected_annotation))
+        data_transcript <- data_transcript %>% dplyr::group_by(.dots = c("read_id",input$groupingFactor)) %>% dplyr::slice(1)
+        print("nrow data transc:")
+        print(nrow(data_transcript))
+        data_transcript
+      })
+
+
+      data_annotation <- shiny::reactive({
+
+        message(input$annotation_factor)
+
+        if (!is.null(input$annotation_factor)) {
+        data_annotation_summarized <- values$polya_table_annotables_annotated %>% dplyr::group_by(.dots = c(input$annotation_factor,input$groupingFactor)) %>% dplyr::summarize(polya_gm_mean=gm_mean(polya_length)) %>%
+          tidyr::spread(!!rlang::sym(input$groupingFactor),polya_gm_mean)
+
+
+        data_annotation_summarized
+
+        }
+        else {
+          shiny::showNotification(ui = "Annotation factor is empty",closeButton = TRUE,type = "message")
+        }
+
+
+      })
+
+
+      ## Generate selectinputs for annotations:
+      output$select_annotation_factorUI <- shiny::renderUI({
+        annotation_factor_choices=values$polya_table_annotables_annotated %>% dplyr::select_if(is.factor) %>% dplyr::select(-grouping_factor_levels) %>% colnames
+        shiny::selectizeInput("annotation_factor","Column used for annotation comparisons",choices=annotation_factor_choices,selected = annotation_factor_choices[1])
+
+      })
+      output$select_annotation_factor_levelsUI <- shiny::renderUI({
+        annotation_factor_selected = input$annotation_factor
+        annotation_factor_possible_levels = levels(values$polya_table_annotables_annotated[[annotation_factor_selected]])
+        shiny::selectizeInput("annotation_factor_levels","Which annotations to show on the plot",choices=annotation_factor_possible_levels,selected = annotation_factor_possible_levels,multiple = TRUE)
+
+      })
+
+
+      shiny::observeEvent(input$annotation_factor,{
+        annotation_proxy %>% DT::selectRows(NULL)
+
+      })
+
+    shiny::observeEvent(input$get_annotables_annotation,
+                      {
+
+                          shiny::withProgress(message="Annotating input polyA table with annotables...",
+                                              detail = "This step can take a little while",
+                                              value = 0.05,min=0,max=1,
+                                              {
+
+                                                values$polya_table_annotables_annotated <- annotate_with_annotables(values$polya_table,genome = input$annotables_genome)
+
+
+                                                values$polya_table_annotables_annotated <-data.table::data.table(values$polya_table_annotables_annotated)
+                                                shiny::incProgress(18/20)
+                                                data.table::setkeyv(values$polya_table_annotables_annotated,c("transcript","biotype","strand","chr"))
+                                                shiny::incProgress(1/20)
+                                              })
+
+                      })
+
+    # Show denisty plot of estimated polya lengths for selected transcript
+    output$annotation_distribution_plot = plotly::renderPlotly({
+
+
+    #print(input$annotation_table_rows_selected)
+      #if (length(input$annotation_table_rows_selected)>0) {
+        selected_row <- input$annotation_table_rows_selected
+        print(selected_row)
+        data_transcript_annotated = data_selected_annotation()
+        #print(data_transcript_annotated)
+        if (input$plot_only_selected_conditions) {
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript_annotated,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
+        }
+        else {
+          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript_annotated,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette,show_center_values=input$center_values_for_distribution_plot)
+        }
+        plotly::ggplotly(transcript_distribution_plot)
+     # }
+     # else {
+     #   suppressWarnings(plotly::plotly_empty())
+     # }
+    })
+
+
+    output$annotations_box_plot = plotly::renderPlotly({
+
+      print(input$annotation_factor)
+      print(input$annotation_factor_levels)
+        transcript_distribution_plot <- plot_annotations_comparison_boxplot(annotated_polya_data = values$polya_table_annotables_annotated,grouping_factor = input$groupingFactor,annotation_factor = input$annotation_factor, annotation_levels = input$annotation_factor_levels, scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,violin=FALSE)
+        plotly::ggplotly(transcript_distribution_plot) %>% plotly::layout(boxmode = "group")
+
+    })
+
   })
 
-}
+
+    }
+

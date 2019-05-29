@@ -31,6 +31,11 @@ annotate_with_annotables <- function(polya_data,genome) {
   tx_to_gene_table = paste0(genome,"_tx2gene")
   polya_data_annotated <-  polya_data %>% dplyr::left_join( eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
 
+  #Explictly convert selected columns to factors (required for proper visualization)
+  polya_data_annotated$biotype <- as.factor(polya_data_annotated$biotype)
+  polya_data_annotated$strand <- as.factor(polya_data_annotated$strand)
+  polya_data_annotated$chr <- as.factor(polya_data_annotated$chr)
+
   return(polya_data_annotated)
   }
 
@@ -80,6 +85,48 @@ annotate_with_biomart <- function(polya_data,attributes_to_get=c('ensembl_transc
   else {
     annotation_data<-biomaRt::getBM(attributes=attributes_to_get, filters = filters, values = ensembl_ids, mart = mart_to_use)
   }
+  polya_data_annotated <-  polya_data %>% dplyr::left_join(annotation_data)
+
+  return(polya_data_annotated)
+}
+
+
+#' Title
+#'
+#' @param polya_data polya data table to annotate
+#' @param attributes_to_get what annotations should be retrieved. Default = c('external_gene_name','description','transcript_biotype')
+#' @param transcript_id which column should be matched in the target mart
+#' @param mart_to_use mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}
+#'
+#' @return a \link[tibble]{tibble}
+#' @export
+annotate_with_org_pacakges <- function(polya_data,columns_of_annotation=c("GO","SYMBOL"),keytype='ENSEMBLTRANS',organism="mus_musculus") {
+
+  if (missing(polya_data)) {
+    stop("Please provide data.frame with polyA predictions as an input.",
+         call. = FALSE)
+  }
+
+  if (missing(mart_to_use)) {
+    stop("Please provide valid mart object",
+         call. = FALSE)
+  }
+
+  valid_org_packages = list("homo_sapiens" = "org.Hs.eg.db", "mus_musculus" = "org.Mm.eg.db","rattus_norvegicus" = "org.rn.eg.db","saccharomyces_cerevisiae" = "org.Sc.sgd.db","caenorhabditis_elegans" = "org.Ce.eg.db")
+
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  assertthat::assert_that(length(columns_of_annotation)>0,msg="please provide columns of annotation")
+
+  ensembl_ids = unique(polya_data$ensembl_transcript_id_short)
+  ensembl_ids <- ensembl_ids[!is.na(ensembl_ids)]
+
+  polya_data <- polya_data %>% dplyr:rename(eval(parse(text=paste0(keytype, " = ensembl_transcript_id_short"))))
+
+
+
+
+  annotation_data<-AnnotationDbi::select(eval(parse(text = valid_org_packages[[organism]])),columns = columns_of_annotation,keytype = keytype,keys = ensembl_ids)
+
   polya_data_annotated <-  polya_data %>% dplyr::left_join(annotation_data)
 
   return(polya_data_annotated)

@@ -59,13 +59,13 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     if(show_center_values!="none") {
       center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(polya_length,na.rm = TRUE),mean_value=mean(polya_length,na.rm=TRUE),gm_mean_value=gm_mean(polya_length,na.rm=TRUE))
       if(show_center_values=='median') {
-            distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,aes_string(xintercept="median_value",color=groupingFactor),linetype="longdash")
+            distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="median_value",color=groupingFactor),linetype="longdash")
       }
       else if(show_center_values=='mean') {
-        distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,aes_string(xintercept="mean_value",color=groupingFactor),linetype="longdash")
+        distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="mean_value",color=groupingFactor),linetype="longdash")
       }
       else if(show_center_values=='gm_mean') {
-        distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,aes_string(xintercept="gm_mean_value",color=groupingFactor),linetype="longdash")
+        distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="gm_mean_value",color=groupingFactor),linetype="longdash")
       }
     }
   }
@@ -324,7 +324,7 @@ plot_MA <- function(input_data,...) {
 #' @return
 #' @export
 #'
-plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_factor = NA,grouping_factor = NA,condition1=NA,condition2=NA,annotation_levels=c(),...) {
+plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_factor = NA,grouping_factor = NA,condition1=NA,condition2=NA,annotation_levels=c(),violin=FALSE,...) {
 
   if (missing(annotated_polya_data)) {
     stop("Annotated polya data table is missing. Please provide a valid input",
@@ -339,8 +339,9 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
   }
 
   if (length(annotation_levels)>0) {
-    assertthat::assert_that(all(annotation_levels %in% levels(annotation_factor)),msg="non-existing factor levels specified for annotation_levels parameter")
+    #assertthat::assert_that(all(annotation_levels %in% levels(annotated_polya_data[[annotation_factor]])),msg="non-existing factor levels specified for annotation_levels parameter")
     annotated_polya_data <- annotated_polya_data %>% dplyr::filter(!!rlang::sym(annotation_factor) %in% annotation_levels)
+    print(annotation_levels)
   }
 
 
@@ -357,11 +358,14 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
     assertthat::assert_that(grouping_factor %in% colnames(annotated_polya_data))
     transcripts_boxplot <- ggplot2::ggplot(annotated_polya_data,ggplot2::aes_string(x=annotation_factor,y="polya_length",color=grouping_factor))
   }
+  else {
+    transcripts_boxplot <- ggplot2::ggplot(annotated_polya_data,ggplot2::aes_string(x=annotation_factor,y="polya_length"))
+  }
   if(violin) {
-    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin()
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin(position = ggplot2::position_dodge())
   }
   else{
-    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot()
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot(position=ggplot2::position_dodge())
   }
 
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
