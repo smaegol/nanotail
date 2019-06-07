@@ -53,7 +53,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 
 
   if (!is.na(groupingFactor)) {
-    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor)) + ggplot2::geom_density(size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::ylab("normalized frequency")
+    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor)) + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::ylab("normalized frequency")
 
 
     if(show_center_values!="none") {
@@ -70,7 +70,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
   }
   else {
-    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot)) + ggplot2::geom_density(size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::xlab("normalized frequency")
+    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot)) + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::xlab("normalized frequency")
     if(show_center_values=="median") {
       distribution_plot <- distribution_plot + ggplot2::geom_vline(aes(xintercept=median(polya_length)),linetype="longdash")
     }
@@ -153,7 +153,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,condition1=NA,conditio
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,points_coloring_factor =NA, ...) {
+plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,points_coloring_factor =NA, repel_elements=NA,repel_group=NA,...) {
 
 
   if (missing(polya_data_summarized)) {
@@ -172,9 +172,13 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
 
 
 
-
-  polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
-
+  if(!is.na(points_coloring_factor)){
+    assertthat::assert_that(points_coloring_factor %in% colnames(polya_data_summarized),msg = "Please provide valid points_coloring_factor as an input")
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor),!!rlang::sym(points_coloring_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+  }
+  else {
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+  }
   polya_data_summarized_counts_xy[is.na(polya_data_summarized_counts_xy)] <- 0
 
   polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)>=min_counts,!!rlang::sym(condition2)>=min_counts,!!rlang::sym(condition1)<=max_counts,!!rlang::sym(condition2)<=max_counts)
@@ -185,14 +189,23 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
   }
 
   if(!is.na(points_coloring_factor)){
-    assertthat::assert_that(points_coloring_factor %in% colnames(polya_data_summarized),msg = "Please provide valid points_coloring_factor as an input")
-    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2),color=!!rlang::sym(points_coloring_factor))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
+    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2),colour=!!rlang::sym(points_coloring_factor))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
   }
   else
     {
     counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
   }
 
+  if (!is.na(repel_elements)) {
+    assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
+    if(!is.na(repel_group)) {
+    assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
+    counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1)))[1:repel_elements,], ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::select(transcript) %>% as.vector()[1:repel_elements]))
+    }
+    else {
+      counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements), ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements) %>% dplyr::select(transcript) %>% as.vector()))
+    }
+  }
   counts_scatter_plot <- .basic_aesthetics(counts_scatter_plot,...)
 
 
@@ -393,7 +406,7 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
 #'
 #' @return \link[ggplot2]{ggplot} object
 #'
-.basic_aesthetics <- function(ggplot_object,scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA,color_mode="color")
+.basic_aesthetics <- function(ggplot_object,scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA,color_mode="color",axis_titles_size=16)
 {
 
 
