@@ -32,13 +32,12 @@ gm_mean = function(x, na.rm=TRUE){
 #'
 #' @param input_table input table for subsampling
 #' @param groupingFactor grouping factor(s)
-#' @param reads_to_subsample specify absolute number of rows to subsample from the data frame (group-wise)
-#' @param fraction_to_subsample specify fraction of rows to subsample from the data frame (group-wise)
+#' @param subsample specify absolute number of rows or fraction to subsample from the data frame (group-wise)
 #'
 #' @return \link{tibble}
 #' @export
 #'
-subsample_table <- function(input_table,groupingFactor=NA,reads_to_subsample=NA,fraction_to_subsample=NA)
+subsample_table <- function(input_table,groupingFactor=NA,subsample=NA)
 {
   if (missing(input_table)) {
     stop("PolyA predictions are missing. Please provide a valid polya_data argument",
@@ -47,11 +46,18 @@ subsample_table <- function(input_table,groupingFactor=NA,reads_to_subsample=NA,
 
   #assertthat::assert_that(is.numeric(reads_to_subsample),"Non-numeric argument for reads_to_subsample")
 
-  assertthat::assert_that((!is.na(reads_to_subsample)) || (!is.na(fraction_to_subsample)),msg = "Please provide either reads_to_subsample or fraction_to_subsample")
-  assertthat::assert_that((!is.na(reads_to_subsample) && is.na(fraction_to_subsample)) || (is.na(reads_to_subsample) && (!is.na(fraction_to_subsample))),msg = "Please provide either reads_to_subsample or fraction_to_subsample (not both of them)")
+  assertthat::assert_that(!is.na(subsample),msg = "Please provide subsample option as an integer or fraction")
+
+  if (isTRUE(round(subsample)==subsample)) {
+    subsample_number = TRUE
+  }
+  else {
+    subsample_number = FALSE
+    message("subsample_fraction")
+  }
 
   #if set to 0 - do not subsample - return input table))
-  if ((!is.na(reads_to_subsample) && reads_to_subsample==0) || (!is.na(fraction_to_subsample) && fraction_to_subsample==0.0)) {
+  if (subsample==0) {
     return(input_table)
   }
   else {
@@ -59,11 +65,11 @@ subsample_table <- function(input_table,groupingFactor=NA,reads_to_subsample=NA,
       # group, if required
       assertthat::assert_that(groupingFactor %in% colnames(input_table),msg=paste0(groupingFactor," is not a column of input dataset"))
       input_table <- input_table %>% group_by(.dots = groupingFactor)
-      if (!is.na(reads_to_subsample)) {
-        input_table <- dplyr::sample_n(input_table,reads_to_subsample)
+      if (subsample_number) {
+        input_table <- dplyr::sample_n(input_table,subsample)
       }
-      else if (!is.na(fraction_to_subsample)) {
-        input_table <- dplyr::sample_frac(input_table,fraction_to_subsample)
+      else {
+        input_table <- dplyr::sample_frac(input_table,subsample)
       }
     }
     else {
@@ -71,11 +77,11 @@ subsample_table <- function(input_table,groupingFactor=NA,reads_to_subsample=NA,
         grouping_var = dplyr::group_vars(input_table)
         #input_table %>% ungroup(input_table)
       }
-      if (!is.na(reads_to_subsample)) {
-        input_table <- input_table[sample(nrow(input_table),reads_to_subsample),]
+      if (subsample_number) {
+        input_table <- input_table[sample(nrow(input_table),subsample),]
       }
-      else if (!is.na(fraction_to_subsample)) {
-        input_table <- dplyr::sample_frac(input_table,fraction_to_subsample)
+      else {
+        input_table <- dplyr::sample_frac(input_table,subsample)
       }
     }
 
