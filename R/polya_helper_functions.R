@@ -25,6 +25,67 @@ gm_mean = function(x, na.rm=TRUE){
 }
 
 
+
+#' Subsample a date frame
+#'
+#' Uses base subsetting and \link{sample} or dplyr \link[dplyr]{sample_n} or \link[dplyr{sample_frac}] to get the subset of the bigger data.frame or tibble
+#'
+#' @param input_table input table for subsampling
+#' @param groupingFactor grouping factor(s)
+#' @param reads_to_subsample specify absolute number of rows to subsample from the data frame (group-wise)
+#' @param fraction_to_subsample specify fraction of rows to subsample from the data frame (group-wise)
+#'
+#' @return \link{tibble}
+#' @export
+#'
+subsample_table <- function(input_table,groupingFactor=NA,reads_to_subsample=NA,fraction_to_subsample=NA)
+{
+  if (missing(input_table)) {
+    stop("PolyA predictions are missing. Please provide a valid polya_data argument",
+         call. = FALSE)
+  }
+
+  #assertthat::assert_that(is.numeric(reads_to_subsample),"Non-numeric argument for reads_to_subsample")
+
+  assertthat::assert_that((!is.na(reads_to_subsample)) || (!is.na(fraction_to_subsample)),msg = "Please provide either reads_to_subsample or fraction_to_subsample")
+  assertthat::assert_that((!is.na(reads_to_subsample) && is.na(fraction_to_subsample)) || (is.na(reads_to_subsample) && (!is.na(fraction_to_subsample))),msg = "Please provide either reads_to_subsample or fraction_to_subsample (not both of them)")
+
+  #if set to 0 - do not subsample - return input table))
+  if ((!is.na(reads_to_subsample) && reads_to_subsample==0) || (!is.na(fraction_to_subsample) && fraction_to_subsample==0.0)) {
+    return(input_table)
+  }
+  else {
+    if(!is.na(groupingFactor)) {
+      # group, if required
+      assertthat::assert_that(groupingFactor %in% colnames(input_table),msg=paste0(groupingFactor," is not a column of input dataset"))
+      input_table <- input_table %>% group_by(.dots = groupingFactor)
+      if (!is.na(reads_to_subsample)) {
+        input_table <- dplyr::sample_n(input_table,reads_to_subsample)
+      }
+      else if (!is.na(fraction_to_subsample)) {
+        input_table <- dplyr::sample_frac(input_table,fraction_to_subsample)
+      }
+    }
+    else {
+      if (any(class(polya_test_lymph2)=="grouped_df")) {
+        grouping_var = dplyr::group_vars(input_table)
+        #input_table %>% ungroup(input_table)
+      }
+      if (!is.na(reads_to_subsample)) {
+        input_table <- input_table[sample(nrow(input_table),reads_to_subsample),]
+      }
+      else if (!is.na(fraction_to_subsample)) {
+        input_table <- dplyr::sample_frac(input_table,fraction_to_subsample)
+      }
+    }
+
+    return(input_table)
+  }
+}
+
+
+
+
 #' Default theme for ggplot2-based plots in the NanoTail package
 #'
 axis_elements_size=15
