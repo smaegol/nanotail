@@ -53,7 +53,6 @@ subsample_table <- function(input_table,groupingFactor=NA,subsample=NA)
   }
   else {
     subsample_number = FALSE
-    message("subsample_fraction")
   }
 
   #if set to 0 - do not subsample - return input table))
