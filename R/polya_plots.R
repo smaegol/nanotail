@@ -24,12 +24,14 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @param condition1 First condition to include on the plot
 #' @param condition2 Second condition to include on the plot
 #' @param show_center_values Show center values as vertical line. Possible values: "none","median","mean"
+#' @param subsample Subsample input table, provide either absolute number or fraction
+#' @param ndensity Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
 #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",...) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,...) {
 
 
   if (missing(polya_data)) {
@@ -37,24 +39,36 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
          call. = FALSE)
   }
 
-  assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
+
   assertthat::assert_that(show_center_values %in% c("none","median","mean","gm_mean"))
 
 
 
-  if (!is.na(condition1)) {
-    if(!is.na(condition2)) {
-      assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
-      assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
-      assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
-      polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
-    }
-  }
+
+
 
 
   if (!is.na(groupingFactor)) {
-    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor)) + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::ylab("normalized frequency")
-
+    assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
+    if (!is.na(condition1)) {
+      if(!is.na(condition2)) {
+        assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
+        assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
+        assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
+        polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
+      }
+    }
+    if(!is.na(subsample)) {
+      polya_data <- subsample_table(polya_data,groupingFactor = groupingFactor,subsample=subsample)
+    }
+    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor))
+    if (ndensity) {
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("normalized frequency")
+    }
+    else {
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::xlab("densityy")
+    }
+    distribution_plot <- distribution_plot + ggplot2::theme_bw()
 
     if(show_center_values!="none") {
       center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(polya_length,na.rm = TRUE),mean_value=mean(polya_length,na.rm=TRUE),gm_mean_value=gm_mean(polya_length,na.rm=TRUE))
@@ -70,7 +84,18 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
   }
   else {
-    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot)) + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::theme_bw() + ggplot2::xlab("normalized frequency")
+    if(!is.na(subsample)) {
+      polya_data <- subsample_table(polya_data,subsample=subsample)
+    }
+    distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot))
+    if (ndensity) {
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("normalized frequency")
+    }
+    else {
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::xlab("density")
+    }
+
+    distribution_plot <- distribution_plot  + ggplot2::theme_bw()
     if(show_center_values=="median") {
       distribution_plot <- distribution_plot + ggplot2::geom_vline(aes(xintercept=median(polya_length)),linetype="longdash")
     }
@@ -316,10 +341,10 @@ plot_MA <- function(input_data,...) {
   }
 
   assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
-  assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). fold_change column is missing.")
-  assertthat::assert_that("mean_expr" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). padj column is missing.")
-  assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). significance column is missing.")
-  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). transcript column is missing.")
+  assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). fold_change column is missing.")
+  assertthat::assert_that("mean_expr" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). mean_expr column is missing.")
+  assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). significance column is missing.")
+  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). transcript column is missing.")
 
 
   MA_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log10(mean_expr),y=log2(fold_change),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
