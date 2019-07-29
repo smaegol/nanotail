@@ -97,3 +97,26 @@ axis_elements_size=15
 axis_titles_size=18
 nanotail_ggplot2_theme <- ggplot2::theme(axis.title = ggplot2::element_text(size=axis_titles_size),axis.text = ggplot2::element_text(size=axis_elements_size),legend.text = ggplot2::element_text(size=axis_elements_size),legend.title = ggplot2::element_text(size=axis_titles_size))
 
+
+
+
+# based on https://community.rstudio.com/t/spread-with-multiple-value-columns/5378/2
+#' Spread multiple columns
+#'
+#' @param df data frame to apply spread on
+#' @param key as in \link{spread}
+#' @param value vector of columns to be taken as value for \link{spread}
+#'
+#' @return \link{tibble}
+#' @export
+#'
+spread_multiple <- function(df, key, value) {
+  # quote key
+  keyq <- rlang::enquo(key)
+  # break value vector into quotes
+  valueq <- rlang::enquo(value)
+  s <- rlang::quos(!!valueq)
+  df %>% gather(variable, value, !!!s) %>%
+    unite(temp, !!keyq, variable) %>%
+    spread(temp, value)
+}

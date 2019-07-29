@@ -18,8 +18,8 @@
 #'
 #' @export
 #'
-calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "sample_name",condition1=NA,condition2=NA,stat_test="Wilcoxon",use_dwell_time=FALSE,custom_glm_formula,alpha=0.05) {
-
+calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript", min_reads = 0, grouping_factor = "sample_name",condition1=NA,condition2=NA,stat_test="Wilcoxon",alpha=0.05,add_summary=TRUE,length_summary_to_show = "gm_mean",...)
+{
 
 
   if (missing(polya_data)) {
@@ -28,14 +28,9 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
   }
 
 
-  available_statistical_tests = c("Wilcoxon","KS","glm")
 
   assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
 
-  assertthat::assert_that(stat_test %in% available_statistical_tests,msg = "Please provide one of available statistical tests (Wilcoxon, KS or glm)")
-  assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
-  assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
-  assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
 
   # if grouping factor has more than two levels
   if (length(levels(polya_data[[grouping_factor]]))>2) {
@@ -59,112 +54,177 @@ calculate_polya_stats <- function(polya_data, min_reads = 0, grouping_factor = "
     condition2 = levels(polya_data[[grouping_factor]])[2]
   }
 
-  ### TBD
-  # batch - make conditional (testing as formula??)
-  # remove batch for now as it is raising some Evaluation error: contrasts can be applied only to factors with 2 or more levels. errors
-
-  ###
-
-  if (!missing(custom_glm_formula)) {
-    custom_glm_formula <- substitute(custom_glm_formula)
-    glm_groups<-all.vars(as.formula(custom_glm_formula))[-1]
-    assertthat::assert_that(length(glm_groups)>0,msg="Please provide valid custom_glm_formula (with the correct categorical explanatory variable)")
-    assertthat::assert_that(all(glm_groups %in% colnames(polya_data)),msg = "worng custom glm formula. Please provide valid column names as explanatory variable")
-    polya_data_complete_cases <-
-      polya_data %>% dplyr::group_by(.dots = c("transcript", glm_groups)) %>% dplyr::add_count() %>% dplyr::filter(n > min_reads) %>% dplyr::slice(1) %>%
-      dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = dplyr::n()) %>% dplyr::filter(nn > 2^(length(glm_groups)-1))
-  }
-
-
-  else {
-  # leave only those tanscripts which were identified in all conditions
-  polya_data_complete_cases <-
-    polya_data %>% dplyr::group_by(.dots = c("transcript", grouping_factor)) %>% dplyr::add_count() %>% dplyr::filter(n > min_reads) %>% dplyr::slice(1) %>%
-    dplyr::ungroup() %>% dplyr::group_by(transcript) %>% dplyr::summarize(nn = dplyr::n()) %>% dplyr::filter(nn > 1)
-  }
-  # All 0 values in polya_length transformed to 1 (log2(1)=0) to avoid errors in glm call
-  polya_data_complete <-
-    polya_data %>% dplyr::semi_join(polya_data_complete_cases %>% dplyr::select(transcript)) %>% dplyr::mutate(polya_length=ifelse(polya_length==0,1,polya_length))
-
-
   polya_data_stat <-
-    polya_data_complete %>% dplyr::ungroup() %>% dplyr::group_by(transcript)
+    polya_data  %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
+
+  polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=map(data,stats_function,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% unnest()
+
+  if (add_summary) {
+    polyA_data_stat_summary <- summarize_polya(polya_data,summary_factors = grouping_factor,transcript_id_column = transcript_id_column) %>% dplyr::select(!!rlang::sym(transcript_id_column),counts,!!rlang::sym(grouping_factor),!!rlang::sym(paste0("polya_",length_summary_to_show))) %>% spread_multiple(!!rlang::sym(grouping_factor),c(counts,!!rlang::sym(paste0("polya_",length_summary_to_show))))
+    polya_data_stat <- polya_data_stat %>% dplyr::full_join(polyA_data_stat_summary)
+    polya_data_stat$length_diff <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] - polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
+  }
+
+  polya_data_stat$padj <- p.adjust(polya_data_stat$p.value, method = "BH")
+
+  # create significance factor
+  polya_data_stat <-
+    polya_data_stat %>% dplyr::mutate(significance = dplyr::case_when(is.na(padj)  ~ NA,
+                                                                      padj < alpha ~ paste0("FDR<", alpha),
+                                                                      ~ "NotSig"))
+
+  polya_data_stat$stats_code <- sapply(polya_data_stat$stats_code,FUN = function(x) {codes_stats[[x]]},simplify = "vector",USE.NAMES = FALSE) %>% unlist()
 
 
+  #polya_data_stat_short <- polya_data_stat %>% dplyr::select(!!rlang::sym(transcript_id_column),dplyr::ends_with("counts"),dplyr::ends_with("gm_mean"),p.value,padj,stats_code)
+
+
+  #return(
+  # list(summary = polya_data_stat,summary_short = polya_data_stat_short))
+  return(polya_data_stat)
+}
+
+
+
+stat_codes_list = list(OK = "OK",
+                   G1_NA = "GROUP1_NA",
+                   G2_NA = "GROUP2_NA",
+                   G1_LC = "G1_LOW_COUNT",
+                   G2_LC = "G2_LOW_COUNT",
+                   B_NA = "DATA FOR BOTH GROUPS NOT AVAILABLE",
+                   B_LC = "LOW COUNTS FOR BOTH GROUPS",
+                   G_LC = "LOW COUNT FOR ONE GROUP",
+                   G_NA = "DATA FOR ONE GROUP NOT AVAILABLE",
+                   ERR = "OTHER ERROR",
+                   GLM_GROUP = "MISSING FACTOR LEVEL IN GLM CALL")
+
+.polya_stats <- function(polya_data,stat_test,grouping_factor,min_reads=0,use_dwell_time = FALSE,custom_glm_formula = NA) {
+
+
+  if (missing(polya_data)) {
+    stop("PolyA predictions are missing. Please provide a valid polya_data argument",
+         call. = FALSE)
+  }
+
+
+  available_statistical_tests = c("Wilcoxon","KS","glm")
+
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+
+  assertthat::assert_that(stat_test %in% available_statistical_tests,msg = "Please provide one of available statistical tests (Wilcoxon, KS or glm)")
+  assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
+  assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
+  assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
+
+
+  # if grouping factor has more than two levels
+  if (length(levels(polya_data[[grouping_factor]]))>2) {
+    if(is.na(condition1) && is.na(condition2)) {
+      #throw error when no conditions for comparison are specified
+      stop(paste0("grouping_factor ",grouping_factor," has more than 2 levels. Please specify condtion1 and condition2 to select comparison pairs"))
+    }
+    else {
+      # filter input data leaving only specified conditions, dropping other factor levels
+      assertthat::assert_that(condition1 %in% levels(polya_data[[grouping_factor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (grouping_factor)"))
+      assertthat::assert_that(condition2 %in% levels(polya_data[[grouping_factor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (grouping_factor)"))
+      assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
+      polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(grouping_factor) %in% c(condition1,condition2)) %>% droplevels()
+    }
+  }
+  else if (length(levels(polya_data[[grouping_factor]]))==1) {
+    stop("Only 1 level present for grouping factor. Choose another groping factor for comparison")
+  }
+  else {
+    condition1 = levels(polya_data[[grouping_factor]])[1]
+    condition2 = levels(polya_data[[grouping_factor]])[2]
+  }
+
+
+  # initial status code
+  stats_code = codes_stats = "OK"
+  # calculate group counts
+  group_counts = polya_data  %>% dplyr::group_by(.dots = c(grouping_factor)) %>% dplyr::count()
+
+  stats <- NA
   if (use_dwell_time) {
     statistics_formula <- paste0("dwell_time ~",grouping_factor)
   }
   else {
-    statistics_formula <- paste0("polya_length ~",grouping_factor)
+    statistics_formula <- paste0("log2(polya_length) ~",grouping_factor)
   }
 
-  if (stat_test=="Wilcoxon") {
-    polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(wilcox.test(as.formula(statistics_formula))$p.value))
-  }
-  else if (stat_test=="KS") {
-    polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(FSA::ksTest(as.formula(statistics_formula))$p.value))
-  }
-  else if (stat_test=="glm") {
-    if(!missing(custom_glm_formula)) {
-      statistics_formula = custom_glm_formula
+
+  if (nrow(group_counts)==2) {
+    if (group_counts[1,]$n < min_reads) {
+      if (group_counts[2,]$n < min_reads) {
+        #message("Not enough counts for both groups")
+        stats_code = "B_LC"
+      }
+      else {
+        #message(paste0("Not enough counts for group ",group_counts[1,]$group))
+        stats_code = "G_LC"
+      }
     }
-    mcp_call <- paste0("multcomp::mcp(",grouping_factor,' = "Tukey")')
-    polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(summary(multcomp::glht(glm(formula = as.formula(statistics_formula)),eval(parse(text = mcp_call))))$test$pvalues[1]))
-    #polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(coef(summary(glm(formula = as.formula(statistics_formula))))[2,4]))
+    else if (group_counts[2,]$n < min_reads) {
+      #message(paste0("Not enough counts for group ",group_counts[2,]$group))
+      stats_code = "G_LC"
+    }
+    else {
+      if (stat_test=="Wilcoxon") {
+        stats <- suppressWarnings(wilcox.test(as.formula(statistics_formula),polya_data))$p.value
+      }
+      else if (stat_test=="KS") {
+        stats <- FSA::ksTest(as.formula(statistics_formula),data=polya_data)$p.value
+      }
+      else if (stat_test=="glm") {
+        valid_glm_groups = TRUE
+        if(!missing(custom_glm_formula)) {
+          custom_glm_formula <- substitute(custom_glm_formula)
+          glm_groups<-all.vars(as.formula(custom_glm_formula))[-1]
+          assertthat::assert_that(length(glm_groups)>0,msg="Please provide valid custom_glm_formula (with the correct categorical explanatory variable)")
+          assertthat::assert_that(all(glm_groups %in% colnames(polya_data)),msg = "wrong custom glm formula. Please provide valid column names as explanatory variable")
+          # check that at least 2 levels present for each explanatory variable
+          for (glm_group in glm_groups) {
+            if (length(levels(polya_data[[glm_group]]))<2) {
+              print(glm_group)
+            }
+          }
+          statistics_formula = custom_glm_formula
+        }
+
+        if (valid_glm_groups) {
+          # required, as log2(0) produces inf, throwing error in glm
+          polya_data <- polya_data %>% dplyr::mutate(polya_length = ifelse(polya_length==0,1,polya_length))
+          mcp_call <- paste0("multcomp::mcp(",grouping_factor,' = "Tukey")')
+          stats <- summary(multcomp::glht(glm(formula = as.formula(statistics_formula),data=polya_data),eval(parse(text = mcp_call))))$test$pvalues[1]
+          #polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(coef(summary(glm(formula = as.formula(statistics_formula))))[2,4]))
+        }
+        else{
+          stats <- NA
+          stats_code <- "GLM_GROUP"
+        }
+      }
+      else {
+        stop("wrong stat_test parameter provided")
+      }
+    }
+  }
+  else if (nrow(group_counts)==1) {
+    stats_code = "G_NA"
+  }
+  else if (nrow(group_counts)==0) {
+    stats_code = "B_NA"
   }
   else {
-    stop("wrong stat_test parameter provided")
+    stats_code = "ERR"
   }
 
-  # summarise statistics
-  polyA_data_stat_summary <-
-    polya_data_stat %>% dplyr::group_by(.dots = c("transcript", grouping_factor)) %>% dplyr::summarise(
-      p.value = max(stats),
-      counts = dplyr::n(),
-      polya_mean = mean(polya_length),
-      polya_sd = sd(polya_length),
-      polya_median = median(polya_length),
-      polya_gm_mean = gm_mean(polya_length)
-    ) %>% tidyr::gather(
-      key = variable,
-      value = wart,
-      counts,
-      polya_mean,
-      polya_gm_mean,
-      polya_median,
-      polya_sd,
-      p.value
-    ) %>% dplyr::mutate(group_var = paste(!!rlang::sym(grouping_factor), variable, sep = "_")) %>% dplyr::select(-c(!!rlang::sym(grouping_factor),
-                                                                                                                    variable)) %>% tidyr::spread(group_var, wart) %>% dplyr::rename(p.value = !!rlang::sym(paste0(condition1,"_p.value"))) %>% dplyr::select(- !!rlang::sym(paste0(condition2,"_p.value"))) %>%
-    dplyr::mutate(fold_change = !!rlang::sym(paste0(condition1,"_polya_median")) / !!rlang::sym(paste0(condition2,"_polya_median"))) %>% dplyr::select(
-      transcript,
-      !!rlang::sym(paste0(condition1,"_counts")),
-      !!rlang::sym(paste0(condition2,"_counts")),
-      !!rlang::sym(paste0(condition1,"_polya_mean")),
-      !!rlang::sym(paste0(condition2,"_polya_mean")),
-      !!rlang::sym(paste0(condition1,"_polya_gm_mean")),
-      !!rlang::sym(paste0(condition2,"_polya_gm_mean")),
-      !!rlang::sym(paste0(condition1,"_polya_median")),
-      !!rlang::sym(paste0(condition2,"_polya_median")),
-      !!rlang::sym(paste0(condition1,"_polya_sd")),
-      !!rlang::sym(paste0(condition2,"_polya_sd")),
-      fold_change,
-      p.value
-    )
-  pvals_BH_summary <-
-    p.adjust(polyA_data_stat_summary$p.value, method = "BH")
-  polyA_data_stat_summary$padj <- pvals_BH_summary
 
-  polyA_data_stat_summary <- polyA_data_stat_summary %>% dplyr::mutate(significance = ifelse(padj < alpha, paste0("FDR<", alpha), "NotSig"))
+  stats<-data_frame(p.value=stats,stats_code=stats_code)
 
-  polyA_data_stat_summary_short <- polyA_data_stat_summary %>% dplyr::select(transcript,dplyr::ends_with("counts"),dplyr::ends_with("gm_mean"),p.value,padj)
+  return(stats)
 
-
-  return(
-    list(stats = polya_data_stat, summary = polyA_data_stat_summary,summary_short = polyA_data_stat_summary_short)
-  )
 }
-
 
 
 #' Summarizes input polya table
