@@ -8,7 +8,7 @@ library(assertive)
 test_that("valid parameters are provided for plot_polya_distribution()",{
 
   expect_error(plot_polya_distribution())
-  expect_error(plot_polya_distribution(example_valid_polya_table))
+  expect_silent(plot_polya_distribution(example_valid_polya_table))
   expect_error(plot_polya_distribution(example_valid_polya_table,groupingFactor = "non-existent_group"))
   expect_silent(plot_polya_distribution(example_valid_polya_table,groupingFactor = "group"))
   expect_silent(plot_polya_distribution(example_valid_polya_table,groupingFactor = "group",condition1="group1",condition2="group2"))
@@ -78,11 +78,10 @@ test_that("valid parameters are provided for plot_nanopolish_qc()",{
 test_that("valid parameters are provided for plot_volcano()",{
 
   binom_test_output_of_example_valid_polya_table <- calculate_diff_exp_binom(example_valid_polya_table,grouping_factor = "group",condition1 = "group1",condition2 = "group2")
+  expect_error
   expect_error(plot_volcano())
-  expect_error(plot_volcano(example_valid_polya_table))
   expect_error(plot_volcano(empty_polya_data_table))
-  expect_warning(plot_volcano(binom_test_output_of_example_valid_polya_table),"Ignoring unknown aesthetics: text",fixed=TRUE)
-  expect_error(plot_volcano(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-transcript)))
+  expect_silent(plot_volcano(binom_test_output_of_example_valid_polya_table))
   expect_error(plot_volcano(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-fold_change)))
   expect_error(plot_volcano(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-padj)))
   expect_error(plot_volcano(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-significance)))
@@ -95,8 +94,7 @@ test_that("valid parameters are provided for plot_MA()",{
   expect_error(plot_MA())
   expect_error(plot_MA(example_valid_polya_table))
   expect_error(plot_MA(empty_polya_data_table))
-  expect_warning(plot_MA(binom_test_output_of_example_valid_polya_table),"Ignoring unknown aesthetics: text",fixed=TRUE)
-  expect_error(plot_MA(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-transcript)))
+  expect_silent(plot_MA(binom_test_output_of_example_valid_polya_table))
   expect_error(plot_MA(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-fold_change)))
   expect_error(plot_MA(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-mean_expr)))
   expect_error(plot_MA(binom_test_output_of_example_valid_polya_table %>% dplyr::select(-significance)))

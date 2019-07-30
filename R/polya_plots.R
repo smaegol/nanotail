@@ -71,7 +71,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     distribution_plot <- distribution_plot + ggplot2::theme_bw()
 
     if(show_center_values!="none") {
-      center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(polya_length,na.rm = TRUE),mean_value=mean(polya_length,na.rm=TRUE),gm_mean_value=gm_mean(polya_length,na.rm=TRUE))
+      center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(!!rlang::sym(parameter_to_plot),na.rm = TRUE),mean_value=mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE),gm_mean_value=gm_mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE))
       if(show_center_values=='median') {
             distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="median_value",color=groupingFactor),linetype="longdash")
       }
@@ -295,11 +295,11 @@ plot_nanopolish_qc <- function(nanopolish_processing_info, frequency=TRUE,...) {
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_volcano <- function(input_data,...) {
+plot_volcano <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10,...) {
 
 
   if (missing(input_data)) {
-    stop("nanopolish processing info is missing. Please provide a valid nanopolish_processing_info argument",
+    stop("input data missing. Please provide a valid input",
          call. = FALSE)
   }
 
@@ -307,11 +307,28 @@ plot_volcano <- function(input_data,...) {
   assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). fold_change column is missing.")
   assertthat::assert_that("padj" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). padj column is missing.")
   assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). significance column is missing.")
-  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). transcript column is missing.")
 
 
-  volcano_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log2(fold_change),y=-log10(padj),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
+  input_data <- input_data %>% dplyr::mutate(padj=as.numeric(padj)) %>% dplyr::filter(!is.na(padj))
 
+  volcano_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log2(fold_change),y=-log10(padj),col=significance))
+  if(!missing(transcript_id_column)) {
+    volcano_plot <- volcano_plot + ggplot2::geom_point(ggplot2::aes(text=!!rlang::sym(transcript_id_column)))
+  }
+  else {
+    volcano_plot <- volcano_plot + ggplot2::geom_point()
+  }
+
+  if (labels) {
+    if(!missing(transcript_id_column)) {
+      labels_df <- input_data %>% dplyr::arrange(padj) %>% dplyr::filter(grepl("^FDR",significance))
+      labels_df <- head(labels_df,nlabels)
+      volcano_plot <- volcano_plot + ggrepel::geom_text_repel(data=labels_df,ggplot2::aes(label=!!rlang::sym(transcript_id_column)),colour="black")
+    }
+    else {
+      warning("transcript_id_column is missing. Labels will not be produced")
+    }
+  }
 
   volcano_plot <- .basic_aesthetics(volcano_plot,...)
 
@@ -332,11 +349,11 @@ plot_volcano <- function(input_data,...) {
 #' @export
 #'
 
-plot_MA <- function(input_data,...) {
+plot_MA <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10,...) {
 
 
   if (missing(input_data)) {
-    stop("nanopolish processing info is missing. Please provide a valid nanopolish_processing_info argument",
+    stop("input data missing. Please provide a valid input",
          call. = FALSE)
   }
 
@@ -344,10 +361,28 @@ plot_MA <- function(input_data,...) {
   assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). fold_change column is missing.")
   assertthat::assert_that("mean_expr" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). mean_expr column is missing.")
   assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). significance column is missing.")
-  assertthat::assert_that("transcript" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). transcript column is missing.")
 
+  input_data <- input_data %>% dplyr::filter(!is.na(fold_change))
 
-  MA_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log10(mean_expr),y=log2(fold_change),col=significance)) + ggplot2::geom_point(ggplot2::aes(text=transcript))
+  MA_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log10(mean_expr),y=log2(fold_change),col=significance))
+  if(!missing(transcript_id_column)) {
+    MA_plot <- MA_plot + ggplot2::geom_point(ggplot2::aes(text=!!rlang::sym(transcript_id_column)))
+  }
+  else {
+    MA_plot <- MA_plot + ggplot2::geom_point()
+  }
+
+  if (labels) {
+    if(!missing(transcript_id_column)) {
+      labels_df <- input_data %>% dplyr::arrange(desc(mean_expr)) %>% dplyr::filter(grepl("^FDR",significance))
+      labels_df <- head(labels_df,nlabels)
+      MA_plot <- MA_plot + ggrepel::geom_text_repel(data=labels_df,ggplot2::aes(label=!!rlang::sym(transcript_id_column)),colour="black")
+    }
+    else {
+      warning("transcript_id_column is missing. Labels will not be produced")
+    }
+  }
+
 
   MA_plot <- .basic_aesthetics(MA_plot,...)
 
