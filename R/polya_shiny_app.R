@@ -340,9 +340,9 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
     # Output elements rendering section  ---------------------------------------------------------
 
     ## Use DT::datatable for tables
-    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip'))
-    output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"))
-    output$annotation_table = DT::renderDataTable(data_annotation(), server = TRUE, selection=list(mode = 'multiple',selected = 1,target = "row"))
+    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip',colReorder = TRUE,fixedColumns = list(leftColumns = 2),scrollX = TRUE))
+    output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip',colReorder = TRUE,fixedColumns = list(leftColumns = 2),scrollX = TRUE))
+    output$annotation_table = DT::renderDataTable(data_annotation(), server = TRUE, selection=list(mode = 'multiple',selected = 1,target = "row"),options = list(dom = 'ftip',colReorder = TRUE,fixedColumns = list(leftColumns = 2),scrollX = TRUE))
 
     annotation_proxy <- DT::dataTableProxy('annotation_table')
 
@@ -371,7 +371,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         selected_row <- input$diff_polya_rows_selected
         selected_transcript = summary_table[selected_row,]$transcript
         data_transcript = data_transcript()
-        print(data_transcript)
+
         if (input$plot_only_selected_conditions) {
           polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, violin=input$violin_instead_of_boxplot)
         }
@@ -401,8 +401,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         selected_transcript = summary_table[selected_row,]$transcript
 
         data_transcript = data_transcript_annot()
-        print(selected_transcript)
-        print(data_transcript)
+
         polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = "ensembl_transcript_id_short",scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot,additional_grouping_factor = input$groupingFactor) + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90))
         print(polya_boxplot)
         #plotly::ggplotly(polya_boxplot)
