@@ -29,12 +29,16 @@ annotate_with_annotables <- function(polya_data,genome) {
   assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   tx_to_gene_table = paste0(genome,"_tx2gene")
-  polya_data_annotated <-  polya_data %>% dplyr::left_join( eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::inner_join(eval(as.name(genome)))
+  # Annotatio join, with last step to deduplicate annotations - remove duplicates which occurs due to e.g multiple entrez ids for each transcript
+  polya_data_annotated <-  polya_data %>% dplyr::left_join( eval(as.symbol(tx_to_gene_table)),by=c("ensembl_transcript_id_short"  = "enstxp")) %>% dplyr::left_join(eval(as.name(genome)) %>% dplyr::group_by(ensgene) %>% dplyr::slice(1) %>% dplyr::ungroup())
 
   #Explictly convert selected columns to factors (required for proper visualization)
   polya_data_annotated$biotype <- as.factor(polya_data_annotated$biotype)
   polya_data_annotated$strand <- as.factor(polya_data_annotated$strand)
   polya_data_annotated$chr <- as.factor(polya_data_annotated$chr)
+
+
+
 
   return(polya_data_annotated)
   }
@@ -100,18 +104,15 @@ annotate_with_biomart <- function(polya_data,attributes_to_get=c('ensembl_transc
 #'
 #' @return a \link[tibble]{tibble}
 #' @export
-annotate_with_org_pacakges <- function(polya_data,columns_of_annotation=c("GO","SYMBOL"),keytype='ENSEMBLTRANS',organism="mus_musculus") {
+annotate_with_org_packages <- function(polya_data,columns_of_annotation=c("GENENAME","SYMBOL"),keytype='ENSEMBLTRANS',organism="mus_musculus") {
 
   if (missing(polya_data)) {
     stop("Please provide data.frame with polyA predictions as an input.",
          call. = FALSE)
   }
 
-  if (missing(mart_to_use)) {
-    stop("Please provide valid mart object",
-         call. = FALSE)
-  }
 
+  # currently thos supported
   valid_org_packages = list("homo_sapiens" = "org.Hs.eg.db", "mus_musculus" = "org.Mm.eg.db","rattus_norvegicus" = "org.rn.eg.db","saccharomyces_cerevisiae" = "org.Sc.sgd.db","caenorhabditis_elegans" = "org.Ce.eg.db")
 
   assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
@@ -120,7 +121,9 @@ annotate_with_org_pacakges <- function(polya_data,columns_of_annotation=c("GO","
   ensembl_ids = unique(polya_data$ensembl_transcript_id_short)
   ensembl_ids <- ensembl_ids[!is.na(ensembl_ids)]
 
-  polya_data <- polya_data %>% dplyr:rename(eval(parse(text=paste0(keytype, " = ensembl_transcript_id_short"))))
+
+
+  polya_data <- polya_data %>% dplyr::rename(!! rlang::sym(keytype) := ensembl_transcript_id_short)
 
 
 
@@ -131,3 +134,4 @@ annotate_with_org_pacakges <- function(polya_data,columns_of_annotation=c("GO","
 
   return(polya_data_annotated)
 }
+
