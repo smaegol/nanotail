@@ -8,13 +8,14 @@
 #' @param grouping_factor which column defines groups (default: sample_name)
 #' @param condition1 if `grouping_factor` has more than 2 levels, which level use for comparison
 #' @param condition2 if `grouping_factor` has more than 2 levels, which level use for comparison
+#' @param transcript_id_column - name of the column with transcript ids (default = "transcript")
+#' @param alpha - alpha value to consider a hit significant (default - 0.05)
+#' @param add_summary - add summary (mean polya lengths, counts) to statistics results?
+#' @param length_summary_to_show - which length summary to show ("median"/"mean"/"gm_mean")
+#' @param ... - additional parameters to pass to .polya_stats (custom_glm_formula,use_dwell_time)
 #' @param stat_test what statistical test to use for testing, currently supports "Wilcoxon" (for \link{wilcox.test}), "KS" (for \link[FSA]{ksTest} from FSA package) or "glm" (for \link{glm})
-#' @param use_dwell_time if TRUE, will use dwell time instead of estimated polya length for statistics
-#' @param custom_glm_formula provides custom formula to be used with glm statistical test
 #'
-#' @return A list with elements:\itemize{
-#' \item summary - summary table with pvalues and median/mean values associated to each transcript
-#' \item stats - input table with p.value column added}
+#' @return summary table with pvalues and median/mean values associated to each transcript
 #'
 #' @export
 #'
@@ -30,6 +31,9 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
 
 
   assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+
+
+
 
 
   # if grouping factor has more than two levels
@@ -55,27 +59,30 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
   }
 
   polya_data_stat <-
-    polya_data  %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
+    polya_data  %>% dplyr::mutate(transcript2=transcript) %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
 
-  polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=map(data,stats_function,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% unnest()
+  polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=purrr::map(data,.polya_stats,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% tidyr::unnest()
 
   if (add_summary) {
     polyA_data_stat_summary <- summarize_polya(polya_data,summary_factors = grouping_factor,transcript_id_column = transcript_id_column) %>% dplyr::select(!!rlang::sym(transcript_id_column),counts,!!rlang::sym(grouping_factor),!!rlang::sym(paste0("polya_",length_summary_to_show))) %>% spread_multiple(!!rlang::sym(grouping_factor),c(counts,!!rlang::sym(paste0("polya_",length_summary_to_show))))
-    polya_data_stat <- polya_data_stat %>% dplyr::full_join(polyA_data_stat_summary)
+    polya_data_stat <- polya_data_stat %>% dplyr::full_join(polyA_data_stat_summary,by=transcript_id_column)
     polya_data_stat$length_diff <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] - polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
+    polya_data_stat$fold_change <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] / polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
   }
 
   polya_data_stat$padj <- p.adjust(polya_data_stat$p.value, method = "BH")
 
   # create significance factor
   polya_data_stat <-
-    polya_data_stat %>% dplyr::mutate(significance = dplyr::case_when(is.na(padj)  ~ NA,
-                                                                      padj < alpha ~ paste0("FDR<", alpha),
-                                                                      ~ "NotSig"))
+    polya_data_stat %>% dplyr::mutate(significance = dplyr::case_when(is.na(padj)  ~ "NotSig",
+                                                                      (padj < alpha) ~ paste0("FDR<", alpha),
+                                                                      TRUE ~ "NotSig"))
 
-  polya_data_stat$stats_code <- sapply(polya_data_stat$stats_code,FUN = function(x) {codes_stats[[x]]},simplify = "vector",USE.NAMES = FALSE) %>% unlist()
+  polya_data_stat$stats_code <- sapply(polya_data_stat$stats_code,FUN = function(x) {stat_codes_list[[x]]},simplify = "vector",USE.NAMES = FALSE) %>% unlist()
 
 
+
+  polya_data_stat <- polya_data_stat %>% dplyr::arrange(padj)
   #polya_data_stat_short <- polya_data_stat %>% dplyr::select(!!rlang::sym(transcript_id_column),dplyr::ends_with("counts"),dplyr::ends_with("gm_mean"),p.value,padj,stats_code)
 
 
@@ -98,6 +105,17 @@ stat_codes_list = list(OK = "OK",
                    ERR = "OTHER ERROR",
                    GLM_GROUP = "MISSING FACTOR LEVEL IN GLM CALL")
 
+#' Calculates polyA statistics for single group of reads (for single transcript)
+#'
+#' @param polya_data - input data frame with polyA predictions
+#' @param stat_test - statistical test to use. One of : Wilcoxon, KS (Kolmogorov-Smirnov) or glm (Generalized Linear Model). All tests use log2(polya_length) as a response variable
+#' @param grouping_factor - factor defining groups (Need to have 2 levels)
+#' @param min_reads - minimum reads per group to include in the statistics calculation
+#' @param use_dwell_time - use dwell time instead of calculated polya length for statistics
+#' @param custom_glm_formula - custom glm formula (when using glm for statistics)
+#'
+#' @return data frame
+#'
 .polya_stats <- function(polya_data,stat_test,grouping_factor,min_reads=0,use_dwell_time = FALSE,custom_glm_formula = NA) {
 
 
@@ -115,6 +133,7 @@ stat_codes_list = list(OK = "OK",
   assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
   assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
   assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
+
 
 
   # if grouping factor has more than two levels
@@ -153,6 +172,10 @@ stat_codes_list = list(OK = "OK",
     statistics_formula <- paste0("log2(polya_length) ~",grouping_factor)
   }
 
+  if ((!missing(custom_glm_formula)) & (stat_test!='glm')) {
+    warning("custom_glm_formula specified but glm is not used for statistics calculation. Formula will be ignored")
+  }
+
 
   if (nrow(group_counts)==2) {
     if (group_counts[1,]$n < min_reads) {
@@ -171,6 +194,7 @@ stat_codes_list = list(OK = "OK",
     }
     else {
       if (stat_test=="Wilcoxon") {
+        #print(polya_data$transcript2)
         stats <- suppressWarnings(wilcox.test(as.formula(statistics_formula),polya_data))$p.value
       }
       else if (stat_test=="KS") {
@@ -186,7 +210,7 @@ stat_codes_list = list(OK = "OK",
           # check that at least 2 levels present for each explanatory variable
           for (glm_group in glm_groups) {
             if (length(levels(polya_data[[glm_group]]))<2) {
-              print(glm_group)
+              valid_glm_groups = FALSE
             }
           }
           statistics_formula = custom_glm_formula
@@ -220,7 +244,7 @@ stat_codes_list = list(OK = "OK",
   }
 
 
-  stats<-data_frame(p.value=stats,stats_code=stats_code)
+  stats<-data.frame(p.value=stats,stats_code=stats_code)
 
   return(stats)
 
@@ -230,10 +254,11 @@ stat_codes_list = list(OK = "OK",
 #' Summarizes input polya table
 #'
 #' Summarizes input table with polyA predictions, calculating medians, mean, geometric means and standard deviation values for each transcript (default).
+#' To get overall summary for each sample or group, specify `transcript_id_column=NULL`
 #'
 #' @param polya_data input table with polyA predictions
 #' @param summary_factors specifies column used for grouping (default: group)
-#' @param transcript_id_column specifies which column use as transcript identifier (default: transcript)
+#' @param transcript_id_column specifies which column use as transcript identifier (default: transcript). Set to `NULL` to omit per-transcript stats
 #'
 #' @return long-format \link[tibble]{tibble} with per-transcript statistics for each sample
 #' @export
@@ -273,7 +298,7 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
 #' @return pca object
 #' @export
 #'
-calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
+calculate_pca <- function(polya_data_summarized,parameter="polya_median",transcript_id_column = "transcript") {
 
 
   if (missing(polya_data_summarized)) {
@@ -283,11 +308,11 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median") {
 
   assertthat::assert_that(assertive::has_rows(polya_data_summarized),msg = "Empty data.frame provided as an input")
   assertthat::assert_that(assertive::is_character(parameter),msg = "Non-character argument is not alowed for `parameter`.")
-  assertthat::assert_that("transcript" %in% colnames(polya_data_summarized),msg=paste0("Required `transcript`` column is missing from input dataset."))
+  assertthat::assert_that(transcript_id_column %in% colnames(polya_data_summarized),msg=paste0("Required `transcript`` column is missing from input dataset."))
   assertthat::assert_that("sample_name" %in% colnames(polya_data_summarized),msg=paste0("Required `sample_name` column is missing from input dataset."))
   assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset."))
 
-  polya_data_summarized <- polya_data_summarized %>% dplyr::select(transcript,sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
+  polya_data_summarized <- polya_data_summarized %>% dplyr::select(!!rlang::sym(transcript_id_column),sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
   polya_data_summarized[is.na(polya_data_summarized)] <- 0
   sample_names <- colnames(polya_data_summarized[,-1])
   transcript_names <- polya_data_summarized[,1]
