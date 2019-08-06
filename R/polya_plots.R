@@ -130,7 +130,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_boxplot <- function(polya_data, groupingFactor,condition1=NA,condition2=NA,violin=FALSE,...) {
+plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,...) {
 
 
   if (missing(polya_data)) {
@@ -139,7 +139,9 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,condition1=NA,conditio
   }
 
   assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
-
+  if(!is.na(additional_grouping_factor)) {
+    assertthat::assert_that(additional_grouping_factor %in% colnames(polya_data),msg=paste0(additional_grouping_factor," is not a column of input dataset"))
+  }
 
   if (!is.na(condition1)) {
     if(!is.na(condition2)) {
@@ -150,13 +152,17 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,condition1=NA,conditio
     }
   }
 
-
-  transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=groupingFactor,y="polya_length"))
+  if (!is.na(additional_grouping_factor)) {
+    transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=groupingFactor,y="polya_length",color=additional_grouping_factor))
+  }
+  else {
+    transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=groupingFactor,y="polya_length"))
+  }
   if(violin) {
-    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin()
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin(position=ggplot2::position_dodge())
   }
   else{
-    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot()
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot(position=ggplot2::position_dodge())
   }
 
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
@@ -311,7 +317,7 @@ plot_volcano <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10
 
   input_data <- input_data %>% dplyr::mutate(padj=as.numeric(padj)) %>% dplyr::filter(!is.na(padj))
 
-  volcano_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log2(fold_change),y=-log10(padj),col=significance))
+  volcano_plot <- ggplot2::ggplot(input_data,ggplot2::aes(x=log2(as.numeric(fold_change)),y=-log10(as.numeric(padj)),col=significance))
   if(!missing(transcript_id_column)) {
     volcano_plot <- volcano_plot + ggplot2::geom_point(ggplot2::aes(text=!!rlang::sym(transcript_id_column)))
   }
