@@ -59,7 +59,7 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
   }
 
   polya_data_stat <-
-    polya_data  %>% dplyr::mutate(transcript2=transcript) %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
+    polya_data %>% dplyr::mutate(transcript2=transcript) %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
 
   polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=purrr::map(data,.polya_stats,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% tidyr::unnest()
 
@@ -244,7 +244,7 @@ stat_codes_list = list(OK = "OK",
   }
 
 
-  stats<-data.frame(p.value=stats,stats_code=stats_code)
+  stats<-tibble::tibble(p.value=stats,stats_code=as.character(stats_code))
 
   return(stats)
 
