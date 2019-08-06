@@ -12,7 +12,7 @@
 #' @export
 #'
 
-nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
+nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_annotations=NA) {
 
   if ( !requireNamespace('shiny',quietly = TRUE) ) {
     stop("NanoTail requires 'shiny'. Please install it using
@@ -225,6 +225,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
                                    shiny::checkboxInput("violin_instead_of_boxplot",value=FALSE,label = "Use violin plot instead of boxplot?")),
                    shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)
                                    ),
+                   shiny::tabPanel("isoforms_boxplot",shiny::plotOutput('isoforms_boxplot') %>% shinycssloaders::withSpinner(type = 4)
+                   ),
                    shiny::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(
             shinydashboard::box(shiny::actionButton("compute_diff_polya",
@@ -233,7 +235,19 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
                 shiny::checkboxInput("use_dwell_time_for_statistics",label = "Use dwell time instead of calculated polya_length for statistics",value = FALSE),
                 shiny::selectInput("polya_stat_test","statistical test to use",choices = c("Wilcoxon","KS"),selected = "Wilcoxon"),
                 shiny::sliderInput("min_reads_for_polya_stats","Minimal count of reads per transcript",0,100,10,1),collapsible = TRUE,width=12))),
-
+        shinydashboard::tabItem(tabName = "diff_exp",
+                                shiny::fluidRow(
+                                  shinydashboard::box(DT::dataTableOutput('diff_exp_table')),
+                                  shinydashboard::tabBox(title = "plots",id="tabset2",height="500px",
+                                                         #tabPanel("pca_biplot",plotOutput('pca_biplot') %>% shinycssloaders::withSpinner(type = 4)),
+                                                         shiny::tabPanel("scatter plot of counts",shiny::actionButton("show_scatter_plot",
+                                                                                                                      shiny::HTML("Show scatter plot"),
+                                                                                                                      icon = shiny::icon("spinner")),plotly::plotlyOutput('counts_plot') %>% shinycssloaders::withSpinner(type = 4)),
+                                                         shiny::tabPanel("volcano_plot",plotly::plotlyOutput('volcano') %>% shinycssloaders::withSpinner(type = 4)),
+                                                         shiny::tabPanel("MA_plot",plotly::plotlyOutput('MAplot') %>% shinycssloaders::withSpinner(type = 4)))),
+                                shiny::fluidRow(shiny::actionButton("compute_diff_exp",
+                                                                    shiny::HTML("Compute Differential Expression using Binomial Test"),
+                                                                    icon = shiny::icon("spinner")))),
         shinydashboard::tabItem(tabName = "annotation_analysis",
           shiny::fluidRow(
             shinydashboard::box(DT::dataTableOutput('annotation_table')),
@@ -268,8 +282,12 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
     values$processing_info_per_sample <- processing_info_per_sample
     values$processing_info_per_sample_spread <- processing_info_per_sample_spread
     values$diff_exp_grouping_factor = "sample_name"
-    values$polya_table_annotables_annotated <- polya_table_passed %>% dplyr::mutate(annotation_group=factor(gsub("^(.).*","\\1",transcript)))
-
+    if(!is.na(precomputed_annotations)) {
+      values$polya_table_annotables_annotated <- precomputed_annotations
+    }
+    else {
+      values$polya_table_annotables_annotated <- polya_table_passed %>% dplyr::mutate(annotation_group=factor(gsub("^(.).*","\\1",transcript)))
+    }
     # get polyA data for currently selected transcript
     data_transcript <- shiny::reactive({
       summary_table = values$polya_statistics_summary_table
@@ -282,7 +300,16 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
       data_transcript
     })
 
+    # get polyA data for currently selected transcript
+    data_transcript_annot <- shiny::reactive({
+      summary_table = values$polya_statistics_summary_table
 
+      selected_row <- input$diff_polya_rows_selected
+      selected_transcript = summary_table[selected_row,]$transcript
+      data_transcript_annot = subset(values$polya_table_annotables_annotated, transcript==selected_transcript)
+
+      data_transcript_annot
+    })
 
     # UI elements rendering ---------------------------------------------------------
 
@@ -344,6 +371,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
         selected_row <- input$diff_polya_rows_selected
         selected_transcript = summary_table[selected_row,]$transcript
         data_transcript = data_transcript()
+        print(data_transcript)
         if (input$plot_only_selected_conditions) {
           polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, violin=input$violin_instead_of_boxplot)
         }
@@ -358,29 +386,59 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
       }
     })
 
+
+    # Show boxplot of estimated polya lengths for selected transcript
+    output$isoforms_boxplot = shiny::renderPlot({
+
+
+
+      req(values$polya_table_annotables_annotated)
+
+      summary_table = values$polya_statistics_summary_table
+
+      if (length(input$diff_polya_rows_selected)>0) {
+        selected_row <- input$diff_polya_rows_selected
+        selected_transcript = summary_table[selected_row,]$transcript
+
+        data_transcript = data_transcript_annot()
+        print(selected_transcript)
+        print(data_transcript)
+        polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = "ensembl_transcript_id_short",scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot,additional_grouping_factor = input$groupingFactor) + theme(axis.text.x = element_text(angle=90))
+        print(polya_boxplot)
+        #plotly::ggplotly(polya_boxplot)
+      }
+      else {
+        print("no data")
+        suppressWarnings(plotly::plotly_empty())
+      }
+    })
+
     # Show denisty plot of estimated polya lengths for selected transcript
     output$polya_distribution = plotly::renderPlotly({
       summary_table = values$polya_statistics_summary_table
 
 
-      if (length(input$diff_polya_rows_selected)>0) {
-        selected_row <- input$diff_polya_rows_selected
-        selected_transcript = summary_table[selected_row,]$transcript
-        data_transcript = data_transcript()
-        if (input$plot_only_selected_conditions) {
-          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
+
+
+        if (length(input$diff_polya_rows_selected)>0) {
+          selected_row <- input$diff_polya_rows_selected
+          selected_transcript = summary_table[selected_row,]$transcript
+          data_transcript = data_transcript()
+          if (input$plot_only_selected_conditions) {
+            transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
+          }
+          else {
+            transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,show_center_values=input$center_values_for_distribution_plot)
+          }
+          plotly::ggplotly(transcript_distribution_plot)
         }
         else {
-          transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,show_center_values=input$center_values_for_distribution_plot)
+          suppressWarnings(plotly::plotly_empty())
         }
-        plotly::ggplotly(transcript_distribution_plot)
-      }
-      else {
-        suppressWarnings(plotly::plotly_empty())
-      }
+
     })
 
-    # Show volcano plot of differntial adenylation analysis
+    # Show volcano plot of differential adenylation analysis
     output$polya_volcano <- plotly::renderPlotly({
 
       # show only if differential adenylation analysis was already done
@@ -406,10 +464,11 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
             condition1 = input$condition1_diff_exp
             condition2 = input$condition2_diff_exp
             shiny::incProgress(1/20)
-            polya_stats <- calculate_polya_stats(values$polya_table,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,stat_test=input$polya_stat_test,use_dwell_time=input$use_dwell_time_for_statistics,min_reads = input$min_reads_for_polya_stats)
+            polya_stats <- calculate_polya_stats(values$polya_table,grouping_factor = input$groupingFactor,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,stat_test=input$polya_stat_test,use_dwell_time=input$use_dwell_time_for_statistics,min_reads = input$min_reads_for_polya_stats,add_summary = TRUE,length_summary_to_show = "median")
             shiny::incProgress(15/20)
-            values$polya_statistics_summary_table <- polya_stats$summary %>% dplyr::select(transcript,!!rlang::sym(paste0(condition1,"_counts")),!!rlang::sym(paste0(condition2,"_counts")),!!rlang::sym(paste0(condition1,"_polya_median")),!!rlang::sym(paste0(condition2,"_polya_median")),p.value,padj)
-            values$polya_table_for_volcano <- polya_stats$summary %>% dplyr::select(transcript,fold_change,padj,significance)
+            #values$polya_statistics_summary_table <- polya_stats %>% dplyr::select(transcript,!!rlang::sym(paste0(condition1,"_counts")),!!rlang::sym(paste0(condition2,"_counts")),!!rlang::sym(paste0(condition1,"_polya_median")),!!rlang::sym(paste0(condition2,"_polya_median")),p.value,padj)
+            values$polya_statistics_summary_table <- polya_stats
+            values$polya_table_for_volcano <- polya_stats %>% dplyr::select(transcript,fold_change,padj,significance)
             values$condition1 <- input$condition1_diff_exp
             values$condition2 <- input$condition2_diff_exp
             shiny::incProgress(3/20)
@@ -572,6 +631,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
     })
 
+
+
     ## Annotation analysis section ---------------------------------------------------------
 
 
@@ -623,7 +684,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
       output$select_annotation_factor_levelsUI <- shiny::renderUI({
         annotation_factor_selected = input$annotation_factor
         annotation_factor_possible_levels = levels(values$polya_table_annotables_annotated[[annotation_factor_selected]])
-        shiny::selectizeInput("annotation_factor_levels","Which annotations to show on the plot",choices=annotation_factor_possible_levels,selected = annotation_factor_possible_levels,multiple = TRUE)
+        shiny::selectInput(inputId = "annotation_factor_levels",label="Which annotations to show on the plot",choices=annotation_factor_possible_levels,selected = annotation_factor_possible_levels,multiple = TRUE)
 
       })
 
@@ -678,7 +739,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA) {
 
     output$annotations_box_plot = plotly::renderPlotly({
 
-      print(input$annotation_factor)
+      print(paste0("annot_factor: ",input$annotation_factor))
       print(input$annotation_factor_levels)
         transcript_distribution_plot <- plot_annotations_comparison_boxplot(annotated_polya_data = values$polya_table_annotables_annotated,grouping_factor = input$groupingFactor,annotation_factor = input$annotation_factor, annotation_levels = input$annotation_factor_levels, scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,violin=FALSE)
         plotly::ggplotly(transcript_distribution_plot) %>% plotly::layout(boxmode = "group")
