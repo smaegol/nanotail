@@ -403,7 +403,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         data_transcript = data_transcript_annot()
 
         polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = "ensembl_transcript_id_short",scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot,additional_grouping_factor = input$groupingFactor)
-        polya_boxplot <- polya_boxplot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90))
+        #polya_boxplot <- polya_boxplot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90))
         print(polya_boxplot)
         #plotly::ggplotly(polya_boxplot)
       }
