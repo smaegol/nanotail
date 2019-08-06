@@ -4,13 +4,17 @@
 \alias{calculate_polya_stats}
 \title{Calculates basic statistics for polya lengths}
 \usage{
-calculate_polya_stats(polya_data, min_reads = 0,
-  grouping_factor = "sample_name", condition1 = NA, condition2 = NA,
-  stat_test = "Wilcoxon", use_dwell_time = FALSE, custom_glm_formula,
-  alpha = 0.05)
+calculate_polya_stats(polya_data, transcript_id_column = "transcript",
+  min_reads = 0, grouping_factor = "sample_name", condition1 = NA,
+  condition2 = NA, stat_test = "Wilcoxon", alpha = 0.05,
+  add_summary = TRUE, length_summary_to_show = "gm_mean", ...)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}
+
+\item{transcript_id_column}{\itemize{
+\item name of the column with transcript ids (default = "transcript")
+}}
 
 \item{min_reads}{minimum number of reads to include transcript in the analysis}
 
@@ -22,14 +26,24 @@ calculate_polya_stats(polya_data, min_reads = 0,
 
 \item{stat_test}{what statistical test to use for testing, currently supports "Wilcoxon" (for \link{wilcox.test}), "KS" (for \link[FSA]{ksTest} from FSA package) or "glm" (for \link{glm})}
 
-\item{use_dwell_time}{if TRUE, will use dwell time instead of estimated polya length for statistics}
+\item{alpha}{\itemize{
+\item alpha value to consider a hit significant (default - 0.05)
+}}
 
-\item{custom_glm_formula}{provides custom formula to be used with glm statistical test}
+\item{add_summary}{\itemize{
+\item add summary (mean polya lengths, counts) to statistics results?
+}}
+
+\item{length_summary_to_show}{\itemize{
+\item which length summary to show ("median"/"mean"/"gm_mean")
+}}
+
+\item{...}{\itemize{
+\item additional parameters to pass to .polya_stats (custom_glm_formula,use_dwell_time)
+}}
 }
 \value{
-A list with elements:\itemize{
-\item summary - summary table with pvalues and median/mean values associated to each transcript
-\item stats - input table with p.value column added}
+summary table with pvalues and median/mean values associated to each transcript
 }
 \description{
 Takes polyA predictions table as input and checks if there is significant difference in polyA lengths between chosen conditions for each transcript.

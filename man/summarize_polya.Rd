@@ -12,11 +12,12 @@ summarize_polya(polya_data, summary_factors = c("group"),
 
 \item{summary_factors}{specifies column used for grouping (default: group)}
 
-\item{transcript_id_column}{specifies which column use as transcript identifier (default: transcript)}
+\item{transcript_id_column}{specifies which column use as transcript identifier (default: transcript). Set to \code{NULL} to omit per-transcript stats}
 }
 \value{
 long-format \link[tibble]{tibble} with per-transcript statistics for each sample
 }
 \description{
 Summarizes input table with polyA predictions, calculating medians, mean, geometric means and standard deviation values for each transcript (default).
+To get overall summary for each sample or group, specify \code{transcript_id_column=NULL}
 }

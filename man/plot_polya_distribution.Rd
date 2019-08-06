@@ -6,7 +6,8 @@
 \usage{
 plot_polya_distribution(polya_data, groupingFactor = NA,
   parameter_to_plot = "polya_length", condition1 = NA,
-  condition2 = NA, show_center_values = "none", ...)
+  condition2 = NA, show_center_values = "none", subsample = NA,
+  ndensity = TRUE, ...)
 }
 \arguments{
 \item{polya_data}{input data with polyA predictions}
@@ -20,6 +21,10 @@ plot_polya_distribution(polya_data, groupingFactor = NA,
 \item{condition2}{Second condition to include on the plot}
 
 \item{show_center_values}{Show center values as vertical line. Possible values: "none","median","mean"}
+
+\item{subsample}{Subsample input table, provide either absolute number or fraction}
+
+\item{ndensity}{Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)}
 
 \item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }

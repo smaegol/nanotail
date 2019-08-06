@@ -4,8 +4,9 @@
 \alias{plot_polya_boxplot}
 \title{Plots boxplot of estimated polya lengths}
 \usage{
-plot_polya_boxplot(polya_data, groupingFactor, condition1 = NA,
-  condition2 = NA, violin = FALSE, ...)
+plot_polya_boxplot(polya_data, groupingFactor,
+  additional_grouping_factor = NA, condition1 = NA, condition2 = NA,
+  violin = FALSE, ...)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}

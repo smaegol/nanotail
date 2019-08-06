@@ -6,7 +6,7 @@
 \usage{
 plot_annotations_comparison_boxplot(annotated_polya_data,
   annotation_factor = NA, grouping_factor = NA, condition1 = NA,
-  condition2 = NA, annotation_levels = c(), ...)
+  condition2 = NA, annotation_levels = c(), violin = FALSE, ...)
 }
 \arguments{
 \item{annotated_polya_data}{data frame(or tibble) with polyA predictions and associated annotations}

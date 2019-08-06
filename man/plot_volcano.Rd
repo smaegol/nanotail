@@ -4,7 +4,8 @@
 \alias{plot_volcano}
 \title{Plots volcano plot of differential expression analysis}
 \usage{
-plot_volcano(input_data, ...)
+plot_volcano(input_data, transcript_id_column, labels = FALSE,
+  nlabels = 10, ...)
 }
 \arguments{
 \item{input_data}{a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}}

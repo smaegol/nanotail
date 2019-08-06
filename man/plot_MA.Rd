@@ -4,7 +4,8 @@
 \alias{plot_MA}
 \title{Plots MA plot of differential expression analysis}
 \usage{
-plot_MA(input_data, ...)
+plot_MA(input_data, transcript_id_column, labels = FALSE, nlabels = 10,
+  ...)
 }
 \arguments{
 \item{input_data}{a table with output from \link{calculate_diff_exp_binom}}
