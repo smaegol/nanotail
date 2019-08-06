@@ -116,7 +116,10 @@ spread_multiple <- function(df, key, value) {
   # break value vector into quotes
   valueq <- rlang::enquo(value)
   s <- rlang::quos(!!valueq)
-  df %>% gather(variable, value, !!!s) %>%
-    unite(temp, !!keyq, variable) %>%
-    spread(temp, value)
+  df %>% tidyr::gather(variable, value, !!!s) %>%
+    tidyr::unite(temp, !!keyq, variable) %>%
+    tidyr::spread(temp, value)
 }
+
+
+
