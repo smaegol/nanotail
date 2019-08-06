@@ -130,10 +130,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
   polya_summary_table <- summarize_polya(polya_data = polya_table_passed,summary_factors = "sample_name")
   if (!is.na(precomputed_polya_statistics)) {
-    assertthat::assert_that(is.list(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
-    assertthat::assert_that("summary" %in% names(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
-    initial_summary_table = precomputed_polya_statistics$summary  %>% dplyr::select(transcript,dplyr::ends_with("_counts"),dplyr::ends_with("_polya_median"),p.value,padj)
-    initial_table_for_volcano <- precomputed_polya_statistics$summary %>% dplyr::select(transcript,fold_change,padj,significance)
+    #assertthat::assert_that(is.list(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
+    #assertthat::assert_that("summary" %in% names(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
+    initial_summary_table = precomputed_polya_statistics  %>% dplyr::select(transcript,dplyr::ends_with("_counts"),dplyr::ends_with("_polya_median"),p.value,padj)
+    initial_table_for_volcano <- precomputed_polya_statistics %>% dplyr::select(transcript,fold_change,padj,significance)
   }
   else {
     initial_summary_table <- polya_summary_table %>% dplyr::select(transcript,sample_name,polya_median) %>% tidyr::spread(sample_name,polya_median)
