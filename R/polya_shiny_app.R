@@ -136,7 +136,12 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
     initial_table_for_volcano <- precomputed_polya_statistics %>% dplyr::select(transcript,fold_change,padj,significance)
   }
   else {
-    initial_summary_table <- polya_summary_table %>% dplyr::select(transcript,sample_name,polya_median) %>% tidyr::spread(sample_name,polya_median)
+    if (number_of_samples>1) {
+      initial_summary_table <- polya_summary_table %>% dplyr::select(transcript,sample_name,polya_median) %>% tidyr::spread(sample_name,polya_median)
+    }
+    else {
+      initial_summary_table <- polya_summary_table
+    }
     initial_table_for_volcano <- initial_summary_table
   }
   initial_summary_table_counts <- polya_summary_table %>% dplyr::select(transcript,sample_name,counts) %>% tidyr::spread(sample_name,counts)
