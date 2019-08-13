@@ -89,7 +89,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
     distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot))
     if (ndensity) {
-      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("normalized frequency")
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("poly(A) length")
     }
     else {
       distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::xlab("density")
@@ -126,11 +126,14 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 #' @param condition2 Second condition to include on the plot
 #' @param violin Should violin plot be plotted instead of boxplot?
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+#' @param additional_grouping_factor
+#' @param add_points should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}
+#' @param max_points maximum number of points to be plotted if add_points is specified
 #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,...) {
+plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,...) {
 
 
   if (missing(polya_data)) {
@@ -163,6 +166,12 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
   }
   else{
     transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot(position=ggplot2::position_dodge())
+  }
+  if(add_points) {
+    points_counts<-polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::count()
+    if (!any(points_counts$n>max_points)) {
+      transcripts_boxplot <- transcripts_boxplot + ggforce::geom_sina(position=ggplot2::position_dodge())
+    }
   }
 
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
