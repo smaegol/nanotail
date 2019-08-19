@@ -193,7 +193,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,points_coloring_factor =NA, repel_elements=NA,repel_group=NA,...) {
+plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, condition1 = NA, condition2 = NA,min_counts = 0, max_counts = 0,points_coloring_factor =NA, repel_elements=NA,repel_group=NA,transcript_id_column="transcript",...) {
 
 
   if (missing(polya_data_summarized)) {
@@ -214,10 +214,10 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
 
   if(!is.na(points_coloring_factor)){
     assertthat::assert_that(points_coloring_factor %in% colnames(polya_data_summarized),msg = "Please provide valid points_coloring_factor as an input")
-    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor),!!rlang::sym(points_coloring_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor),!!rlang::sym(points_coloring_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
   }
   else {
-    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(transcript,!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
   }
   polya_data_summarized_counts_xy[is.na(polya_data_summarized_counts_xy)] <- 0
 
@@ -229,21 +229,21 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
   }
 
   if(!is.na(points_coloring_factor)){
-    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2),colour=!!rlang::sym(points_coloring_factor))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
+    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2),colour=!!rlang::sym(points_coloring_factor))) + ggplot2::geom_point(ggplot2::aes_string(text=transcript_id_column),alpha=0.7)
   }
   else
     {
-    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2))) + ggplot2::geom_point(ggplot2::aes(text=transcript),alpha=0.7)
+    counts_scatter_plot<-ggplot2::ggplot(polya_data_summarized_counts_xy,ggplot2::aes(x=!!rlang::sym(condition1),y=!!rlang::sym(condition2))) + ggplot2::geom_point(ggplot2::aes_string(text=transcript_id_column),alpha=0.7)
   }
 
   if (!is.na(repel_elements)) {
     assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
     if(!is.na(repel_group)) {
     assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
-    counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1)))[1:repel_elements,], ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::select(transcript) %>% as.vector()[1:repel_elements]))
+    counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1)))[1:repel_elements,], ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::select(!!rlang::sym(transcript_id_column)) %>% as.vector()[1:repel_elements]))
     }
     else {
-      counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements), ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements) %>% dplyr::select(transcript) %>% as.vector()))
+      counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements), ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::slice(1:repel_elements) %>% dplyr::select(!!rlang::sym(transcript_id_column)) %>% as.vector()))
     }
   }
   counts_scatter_plot <- .basic_aesthetics(counts_scatter_plot,...)
