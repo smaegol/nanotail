@@ -209,7 +209,7 @@ stat_codes_list = list(OK = "OK",
           assertthat::assert_that(all(glm_groups %in% colnames(polya_data)),msg = "wrong custom glm formula. Please provide valid column names as explanatory variable")
           # check that at least 2 levels present for each explanatory variable
           for (glm_group in glm_groups) {
-            if (length(levels(polya_data[[glm_group]]))<2) {
+            if (length(unique(polya_data[[glm_group]]))<2) {
               valid_glm_groups = FALSE
             }
           }
@@ -294,6 +294,7 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
 #'
 #' @param polya_data_summarized summarized polyA predictions. Generate use \link{summarize_polya}
 #' @param parameter - parameter used for PCA calculation. One of: polya_median,polya_mean,polya_gm_mean,counts
+#' @param transcript_id_column column which respresnrt transcript id
 #'
 #' @return pca object
 #' @export
@@ -317,7 +318,15 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median",transcr
   sample_names <- colnames(polya_data_summarized[,-1])
   transcript_names <- polya_data_summarized[,1]
   polya_data_summarized_t<-t(polya_data_summarized[,-1])
-  colnames(polya_data_summarized_t) <- transcript_names
+  # step required to remove zero-variance columns (based on https://stackoverflow.com/questions/40315227/how-to-solve-prcomp-default-cannot-rescale-a-constant-zero-column-to-unit-var)
+  zero_variance_transcripts<-which(apply(polya_data_summarized_t, 2, var)==0)
+  if (length(zero_variance_transcripts>0)) {
+    polya_data_summarized_t <- polya_data_summarized_t[ , -zero_variance_transcripts]
+    colnames(polya_data_summarized_t) <- transcript_names[-zero_variance_transcripts]
+  }
+  else {
+    colnames(polya_data_summarized_t) <- transcript_names
+  }
   pca.test <- prcomp(polya_data_summarized_t,center=T,scale=T)
 
   return_list <- list(pca = pca.test,sample_names = sample_names)
@@ -335,7 +344,7 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median",transcr
 #' @param polya_data A data.frame or tibble containig unfiltered polya output from Nanopolish,
 #' @param grouping_factor How to group results (e.g. by sample_name)
 #' best read with \link[nanotail]{read_polya_single} or \link[nanotail]{read_polya_multiple}
-#' @return A \link[table]{tibble} with counts for each processing state
+#' @return A \link[tibble]{tibble} with counts for each processing state
 
 #' @export
 #'
