@@ -26,12 +26,13 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @param show_center_values Show center values as vertical line. Possible values: "none","median","mean"
 #' @param subsample Subsample input table, provide either absolute number or fraction
 #' @param ndensity Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)
+#' @param mode_method method used for the mode calculation (argument to modeest::mlv method parameter)
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
 #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,...) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="mfv",...) {
 
 
   if (missing(polya_data)) {
@@ -40,11 +41,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
   }
 
 
-  assertthat::assert_that(show_center_values %in% c("none","median","mean","gm_mean"))
-
-
-
-
+  assertthat::assert_that(show_center_values %in% c("none","median","mean","gm_mean","mode"))
 
 
 
@@ -63,15 +60,15 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
     distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor))
     if (ndensity) {
-      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("normalized frequency")
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::ylab("normalized density")
     }
     else {
-      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::xlab("densityy")
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::ylab("density")
     }
     distribution_plot <- distribution_plot + ggplot2::theme_bw()
 
     if(show_center_values!="none") {
-      center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(!!rlang::sym(parameter_to_plot),na.rm = TRUE),mean_value=mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE),gm_mean_value=gm_mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE))
+      center_values = polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarize(median_value = median(!!rlang::sym(parameter_to_plot),na.rm = TRUE),mean_value=mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE),gm_mean_value=gm_mean(!!rlang::sym(parameter_to_plot),na.rm=TRUE),mode_value=modeest::mlv(!!rlang::sym(parameter_to_plot),method=mode_method,na.rm=TRUE))
       if(show_center_values=='median') {
             distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="median_value",color=groupingFactor),linetype="longdash")
       }
@@ -81,6 +78,9 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
       else if(show_center_values=='gm_mean') {
         distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="gm_mean_value",color=groupingFactor),linetype="longdash")
       }
+      else if(show_center_values=='mode') {
+        distribution_plot <- distribution_plot + ggplot2::geom_vline(data=center_values,ggplot2::aes_string(xintercept="mode_value",color=groupingFactor),linetype="longdash")
+      }
     }
   }
   else {
@@ -89,20 +89,21 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
     distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot))
     if (ndensity) {
-      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::xlab("poly(A) length")
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::ylab("normalized density")
     }
     else {
-      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::xlab("density")
+      distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..density..)) + ggplot2::ylab("density")
     }
 
     distribution_plot <- distribution_plot  + ggplot2::theme_bw()
     if(show_center_values=="median") {
-      distribution_plot <- distribution_plot + ggplot2::geom_vline(aes(xintercept=median(polya_length)),linetype="longdash")
     }
     else if (show_center_values=="mean") {
       distribution_plot <- distribution_plot + ggplot2::geom_vline(aes(xintercept=mean(polya_length)),linetype="longdash")
     }
   }
+
+  distribution_plot <- distribution_plot + xlab("poly(A) length")
 
   distribution_plot <- .basic_aesthetics(distribution_plot,...)
 
@@ -125,11 +126,12 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 #' @param condition1 First condition to include on the plot
 #' @param condition2 Second condition to include on the plot
 #' @param violin Should violin plot be plotted instead of boxplot?
-#' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
-#' @param additional_grouping_factor
+#' @param additional_grouping_factor additional coloring grouping factor
 #' @param add_points should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}
 #' @param max_points maximum number of points to be plotted if add_points is specified
 #'
+#' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
@@ -189,6 +191,10 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
 #' @param min_counts minimum number of counts to be shown
 #' @param max_counts maximum number of counts to be shown
+#' @param points_coloring_factor factor specifying how to color points
+#' @param repel_elements TBD
+#' @param repel_group TBD
+#' @param transcript_id_column TBD
 #' #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
@@ -305,7 +311,11 @@ plot_nanopolish_qc <- function(nanopolish_processing_info, frequency=TRUE,...) {
 #'
 
 #' @param input_data a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}
+#'
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+#' @param transcript_id_column column used for transcript id
+#' @param labels show point labels using ggrepel
+#' @param nlabels number of labels to show
 #' #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
@@ -359,6 +369,9 @@ plot_volcano <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10
 #'
 #' @param input_data a table with output from \link{calculate_diff_exp_binom}
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+#' @param transcript_id_column column used for transcript id
+#' @param labels show point labels using ggrepel
+#' @param nlabels number of labels to show
 #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
@@ -414,8 +427,9 @@ plot_MA <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10,...)
 #' @param condition2 if only 2 conditions to show, choose which one is second
 #' @param annotation_levels vector specifying selected annotation levels from annotation_factor
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+#' @param violin plot violin instead of boxplot?
 #'
-#' @return
+#' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
 plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_factor = NA,grouping_factor = NA,condition1=NA,condition2=NA,annotation_levels=c(),violin=FALSE,...) {
@@ -478,6 +492,8 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
 #' @param scale_y_limit_high upper limit of y continuous scale
 #' @param color_palette color palette (one from RColorBrewer of ggsci packages)
 #' @param plot_title Title of the plot
+#' @param color_mode if using color, fill or both, when specifying color_palette
+#' @param axis_titles_size size of axis titles
 #'
 #' @return \link[ggplot2]{ggplot} object
 #'
@@ -543,5 +559,65 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
   }
 
   return(ggplot_object)
+
+}
+
+
+#' Title
+#'
+#' @param input_data data frame (or tibble) with input values
+#' @param groupingFactor factor to group input table by
+#' @param valuesColumn column with numeric values to calculate density on
+#' @param density_bw bandwidth of density (bw argument to \link{density} function, default=1 )
+#' @param kernel kenrel to use
+#' @param shift_bands shift bands by specified value
+#' @param kernel_from from which value start density estimation
+#' @param kernel_to to which value perform density estimation
+#' @param scale_by_size should densities be scaled by sample size
+#' @param scaling_vector vector containing scaling factors
+#'
+#' @return list containing plot and density estimates (data.frame)
+#' @export
+#'
+plot_virtual_gel <- function(input_data, groupingFactor, valuesColumn, density_bw = 0.6, kernel="gaussian",shift_bands=0,kernel_from=0,kernel_to=NA,scale_by_size=T,scaling_vector=NA) {
+
+  data_for_gel <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::mutate(no_sequences=n()) %>% tidyr::nest()
+
+
+
+  if (!is.na(scaling_vector)) {
+    #data_for_gel$scale <- scaling_vector
+    data_counts <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarise(no_sequences=n())
+    data_counts <- tibble::enframe(scaling_vector) %>% dplyr::inner_join(data_counts,by=c("name" = groupingFactor))
+    data_counts <- data_counts %>% dplyr::ungroup() %>% dplyr::mutate(data_ratio=no_sequences/value) %>% dplyr::mutate(scale = data_ratio/max(data_ratio)) %>% dplyr::select(name,scale)
+    #data_counts$scale <- data_counts$data_ratio/max(data_counts$data_ratio)
+    data_for_gel <- data_for_gel %>% dplyr::inner_join(data_counts,by=setNames("name",groupingFactor))
+  }
+
+
+
+  if(is.na(kernel_from)) {
+    kernel_from=0
+  }
+  if(is.na(kernel_to)) {
+    kernel_to=max(input_data[[valuesColumn]])
+  }
+
+  #### TODO: improve scale_by_size approach
+  if (scale_by_size) {
+    if(!is.na(scaling_vector)) {
+      data_for_gel <- data_for_gel %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::mutate(dens_x = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$x),dens_y = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$y*scale)) %>% dplyr::select(-data) %>% tidyr::unnest()
+    }
+    else{
+      data_for_gel <- data_for_gel %>% dplyr::mutate(dens_x = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$x),dens_y = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$y*.x$no_sequences[1])) %>% dplyr::select(-data) %>% tidyr::unnest()
+    }
+  }
+  else {
+    data_for_gel <- data_for_gel %>% dplyr::mutate(dens_x = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$x),dens_y = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$y)) %>% dplyr::select(-data) %>% tidyr::unnest()
+  }
+  virtual_gel_plot<-ggplot2::ggplot(data_for_gel,ggplot2::aes(x=sample_name,y=dens_x+shift_bands,fill=dens_y)) + ggplot2::geom_tile(width=0.9,show.legend = F) + ggplot2::theme_minimal() + ggplot2::scale_fill_gradient(low="white",high="black") + ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) + ggplot2::ylab(valuesColumn)
+
+  return(list(data=data_for_gel,plot=virtual_gel_plot))
+
 
 }
