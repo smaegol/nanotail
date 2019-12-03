@@ -4,8 +4,11 @@
 \alias{summarize_polya}
 \title{Summarizes input polya table}
 \usage{
-summarize_polya(polya_data, summary_factors = c("group"),
-  transcript_id_column = c("transcript"))
+summarize_polya(
+  polya_data,
+  summary_factors = c("group"),
+  transcript_id_column = c("transcript")
+)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}

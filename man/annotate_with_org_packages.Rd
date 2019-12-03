@@ -4,18 +4,21 @@
 \alias{annotate_with_org_packages}
 \title{Title}
 \usage{
-annotate_with_org_packages(polya_data,
+annotate_with_org_packages(
+  polya_data,
   columns_of_annotation = c("GENENAME", "SYMBOL"),
-  keytype = "ENSEMBLTRANS", organism = "mus_musculus")
+  keytype = "ENSEMBLTRANS",
+  organism = "mus_musculus"
+)
 }
 \arguments{
 \item{polya_data}{polya data table to annotate}
 
-\item{attributes_to_get}{what annotations should be retrieved. Default = c('external_gene_name','description','transcript_biotype')}
+\item{columns_of_annotation}{which columns to use}
 
-\item{transcript_id}{which column should be matched in the target mart}
+\item{keytype}{whic keytype to use}
 
-\item{mart_to_use}{mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}}
+\item{organism}{whic organism database to use}
 }
 \value{
 a \link[tibble]{tibble}

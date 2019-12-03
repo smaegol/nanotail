@@ -4,10 +4,19 @@
 \alias{calculate_polya_stats}
 \title{Calculates basic statistics for polya lengths}
 \usage{
-calculate_polya_stats(polya_data, transcript_id_column = "transcript",
-  min_reads = 0, grouping_factor = "sample_name", condition1 = NA,
-  condition2 = NA, stat_test = "Wilcoxon", alpha = 0.05,
-  add_summary = TRUE, length_summary_to_show = "gm_mean", ...)
+calculate_polya_stats(
+  polya_data,
+  transcript_id_column = "transcript",
+  min_reads = 0,
+  grouping_factor = "sample_name",
+  condition1 = NA,
+  condition2 = NA,
+  stat_test = "Wilcoxon",
+  alpha = 0.05,
+  add_summary = TRUE,
+  length_summary_to_show = "gm_mean",
+  ...
+)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}

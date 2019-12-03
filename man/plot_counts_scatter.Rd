@@ -4,8 +4,19 @@
 \alias{plot_counts_scatter}
 \title{Title}
 \usage{
-plot_counts_scatter(polya_data_summarized, groupingFactor = NA,
-  condition1 = NA, condition2 = NA, ...)
+plot_counts_scatter(
+  polya_data_summarized,
+  groupingFactor = NA,
+  condition1 = NA,
+  condition2 = NA,
+  min_counts = 0,
+  max_counts = 0,
+  points_coloring_factor = NA,
+  repel_elements = NA,
+  repel_group = NA,
+  transcript_id_column = "transcript",
+  ...
+)
 }
 \arguments{
 \item{polya_data_summarized}{polyA predictions table, summarized using \link{summarize_polya}}
@@ -16,8 +27,20 @@ plot_counts_scatter(polya_data_summarized, groupingFactor = NA,
 
 \item{condition2}{second condition to use for plotting}
 
-\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+\item{min_counts}{minimum number of counts to be shown}
+
+\item{max_counts}{maximum number of counts to be shown}
+
+\item{points_coloring_factor}{factor specifying how to color points}
+
+\item{repel_elements}{TBD}
+
+\item{repel_group}{TBD}
+
+\item{transcript_id_column}{TBD
 #'}
+
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object

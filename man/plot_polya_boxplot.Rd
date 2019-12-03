@@ -4,20 +4,34 @@
 \alias{plot_polya_boxplot}
 \title{Plots boxplot of estimated polya lengths}
 \usage{
-plot_polya_boxplot(polya_data, groupingFactor,
-  additional_grouping_factor = NA, condition1 = NA, condition2 = NA,
-  violin = FALSE, ...)
+plot_polya_boxplot(
+  polya_data,
+  groupingFactor,
+  additional_grouping_factor = NA,
+  condition1 = NA,
+  condition2 = NA,
+  violin = FALSE,
+  add_points = FALSE,
+  max_points = 500,
+  ...
+)
 }
 \arguments{
 \item{polya_data}{input table with polyA predictions}
 
 \item{groupingFactor}{which factor to use for grouping}
 
+\item{additional_grouping_factor}{additional coloring grouping factor}
+
 \item{condition1}{First condition to include on the plot}
 
 \item{condition2}{Second condition to include on the plot}
 
 \item{violin}{Should violin plot be plotted instead of boxplot?}
+
+\item{add_points}{should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}}
+
+\item{max_points}{maximum number of points to be plotted if add_points is specified}
 
 \item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }

@@ -4,7 +4,11 @@
 \alias{calculate_pca}
 \title{Calculates PCA using polya predictions or counts}
 \usage{
-calculate_pca(polya_data_summarized, parameter = "polya_median")
+calculate_pca(
+  polya_data_summarized,
+  parameter = "polya_median",
+  transcript_id_column = "transcript"
+)
 }
 \arguments{
 \item{polya_data_summarized}{summarized polyA predictions. Generate use \link{summarize_polya}}
@@ -12,6 +16,8 @@ calculate_pca(polya_data_summarized, parameter = "polya_median")
 \item{parameter}{\itemize{
 \item parameter used for PCA calculation. One of: polya_median,polya_mean,polya_gm_mean,counts
 }}
+
+\item{transcript_id_column}{column which respresnrt transcript id}
 }
 \value{
 pca object

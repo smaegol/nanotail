@@ -4,8 +4,14 @@
 \alias{.polya_stats}
 \title{Calculates polyA statistics for single group of reads (for single transcript)}
 \usage{
-.polya_stats(polya_data, stat_test, grouping_factor, min_reads = 0,
-  use_dwell_time = FALSE, custom_glm_formula = NA)
+.polya_stats(
+  polya_data,
+  stat_test,
+  grouping_factor,
+  min_reads = 0,
+  use_dwell_time = FALSE,
+  custom_glm_formula = NA
+)
 }
 \arguments{
 \item{polya_data}{\itemize{

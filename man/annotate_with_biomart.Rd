@@ -4,19 +4,22 @@
 \alias{annotate_with_biomart}
 \title{Title}
 \usage{
-annotate_with_biomart(polya_data,
-  attributes_to_get = c("ensembl_transcript_id", "external_gene_name",
-  "description", "transcript_biotype"),
-  filters = "ensembl_transcript_id", mart_to_use = NA)
+annotate_with_biomart(
+  polya_data,
+  attributes_to_get = c("ensembl_transcript_id", "external_gene_name", "description",
+    "transcript_biotype"),
+  filters = "ensembl_transcript_id",
+  mart_to_use = NA
+)
 }
 \arguments{
 \item{polya_data}{polya data table to annotate}
 
 \item{attributes_to_get}{what annotations should be retrieved. Default = c('external_gene_name','description','transcript_biotype')}
 
-\item{mart_to_use}{mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}}
+\item{filters}{which column should be matched in the target mart}
 
-\item{transcript_id}{which column should be matched in the target mart}
+\item{mart_to_use}{mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}}
 }
 \value{
 a \link[tibble]{tibble}

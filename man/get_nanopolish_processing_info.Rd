@@ -13,7 +13,7 @@ get_nanopolish_processing_info(polya_data, grouping_factor = NA)
 best read with \link[nanotail]{read_polya_single} or \link[nanotail]{read_polya_multiple}}
 }
 \value{
-A \link[table]{tibble} with counts for each processing state
+A \link[tibble]{tibble} with counts for each processing state
 }
 \description{
 Process the information returned by \code{nanopolish polya} in the \code{qc_tag} column

@@ -4,9 +4,16 @@
 \alias{plot_annotations_comparison_boxplot}
 \title{Title}
 \usage{
-plot_annotations_comparison_boxplot(annotated_polya_data,
-  annotation_factor = NA, grouping_factor = NA, condition1 = NA,
-  condition2 = NA, annotation_levels = c(), violin = FALSE, ...)
+plot_annotations_comparison_boxplot(
+  annotated_polya_data,
+  annotation_factor = NA,
+  grouping_factor = NA,
+  condition1 = NA,
+  condition2 = NA,
+  annotation_levels = c(),
+  violin = FALSE,
+  ...
+)
 }
 \arguments{
 \item{annotated_polya_data}{data frame(or tibble) with polyA predictions and associated annotations}
@@ -21,7 +28,12 @@ plot_annotations_comparison_boxplot(annotated_polya_data,
 
 \item{annotation_levels}{vector specifying selected annotation levels from annotation_factor}
 
+\item{violin}{plot violin instead of boxplot?}
+
 \item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
+}
+\value{
+\link[ggplot2]{ggplot} object
 }
 \description{
 Title

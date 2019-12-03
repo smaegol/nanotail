@@ -4,10 +4,17 @@
 \alias{.basic_aesthetics}
 \title{Title}
 \usage{
-.basic_aesthetics(ggplot_object, scale_x_limit_low = NA,
-  scale_x_limit_high = NA, scale_y_limit_low = NA,
-  scale_y_limit_high = NA, color_palette = "Set1", plot_title = NA,
-  color_mode = "color", axis_titles_size = 16)
+.basic_aesthetics(
+  ggplot_object,
+  scale_x_limit_low = NA,
+  scale_x_limit_high = NA,
+  scale_y_limit_low = NA,
+  scale_y_limit_high = NA,
+  color_palette = "Set1",
+  plot_title = NA,
+  color_mode = "color",
+  axis_titles_size = 16
+)
 }
 \arguments{
 \item{ggplot_object}{ggplot2 object to manipulate asesthetics}
@@ -23,6 +30,10 @@
 \item{color_palette}{color palette (one from RColorBrewer of ggsci packages)}
 
 \item{plot_title}{Title of the plot}
+
+\item{color_mode}{if using color, fill or both, when specifying color_palette}
+
+\item{axis_titles_size}{size of axis titles}
 }
 \value{
 \link[ggplot2]{ggplot} object
