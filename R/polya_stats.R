@@ -280,7 +280,8 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
       polya_mean = mean(polya_length),
       polya_sd = sd(polya_length),
       polya_median = median(polya_length),
-      polya_gm_mean = gm_mean(polya_length)
+      polya_gm_mean = gm_mean(polya_length),
+      polya_sem = polya_sd/sqrt(counts)
     )
   return(polya_data_summarized)
 }
