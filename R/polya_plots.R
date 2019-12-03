@@ -32,7 +32,7 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="mfv",...) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="density",...) {
 
 
   if (missing(polya_data)) {
@@ -103,7 +103,7 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     }
   }
 
-  distribution_plot <- distribution_plot + xlab("poly(A) length")
+  distribution_plot <- distribution_plot + ggplot2::xlab("poly(A) length")
 
   distribution_plot <- .basic_aesthetics(distribution_plot,...)
 
@@ -615,7 +615,7 @@ plot_virtual_gel <- function(input_data, groupingFactor, valuesColumn, density_b
   else {
     data_for_gel <- data_for_gel %>% dplyr::mutate(dens_x = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$x),dens_y = purrr::map(data,~density(.x[[valuesColumn]],bw=density_bw,kernel=kernel,from=kernel_from,to=kernel_to)$y)) %>% dplyr::select(-data) %>% tidyr::unnest()
   }
-  virtual_gel_plot<-ggplot2::ggplot(data_for_gel,ggplot2::aes(x=sample_name,y=dens_x+shift_bands,fill=dens_y)) + ggplot2::geom_tile(width=0.9,show.legend = F) + ggplot2::theme_minimal() + ggplot2::scale_fill_gradient(low="white",high="black") + ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) + ggplot2::ylab(valuesColumn)
+  virtual_gel_plot<-ggplot2::ggplot(data_for_gel,ggplot2::aes(x=!!rlang::sym(groupingFactor),y=dens_x+shift_bands,fill=dens_y)) + ggplot2::geom_tile(width=0.9,show.legend = F) + ggplot2::theme_minimal() + ggplot2::scale_fill_gradient(low="white",high="black") + ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) + ggplot2::ylab(valuesColumn)
 
   return(list(data=data_for_gel,plot=virtual_gel_plot))
 

@@ -8,6 +8,7 @@
 #'
 #' @param polya_table polyA predictions table. Can be obtained with \link{read_polya_multiple}
 #' @param precomputed_polya_statistics precomputed differential adenylation table (obtained with \link{calculate_polya_stats})
+#' @param precomputed_annotations precomputed annotations
 #'
 #' @export
 #'
@@ -166,7 +167,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         shinydashboard::menuItem("Global polyA distribution", icon = shiny::icon("chart-line"), tabName = "global_distr"),
         shinydashboard::menuItem("Differential adenylation", icon = shiny::icon("dna"), tabName = "diff_polya"),
         shinydashboard::menuItem("Differential expression", icon = shiny::icon("dna"), tabName = "diff_exp"),
-        shinydashboard::menuItem("Annotation_analysis", icon = shiny::icon("dna"), tabName = "annotation_analysis"),
+        shinydashboard::menuItem("Annotation_analysis", icon = shiny::icon("dna"), tabName = "annotation_analysis_inactive"),
         shinydashboard::menuItem("Plot settings", icon = shiny::icon("settings"), tabName = "plot_settings"),
         shinydashboard::menuItem("About", tabName = "dashboard", icon = shiny::icon("info"))
       ),
@@ -215,7 +216,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
             shiny::sliderInput("scale_limit_high","Plot scale limit high",50,1024,200,10),
             shiny::sliderInput("counts_scatter_low_value","Counts scatter lower counts limit",0,10024,0,50),
             shiny::sliderInput("counts_scatter_high_value","Counts scatter high counts limit",100,10024,1000,50),
-            shiny::selectInput("center_values_for_distribution_plot",choices=c("none","median","mean","gm_mean"),selected = "median",label = "Show vertical lines with centered values on density plots?")
+            shiny::selectInput("center_values_for_distribution_plot",choices=c("none","median","mean","gm_mean","mode"),selected = "median",label = "Show vertical lines with centered values on density plots?")
             )),
         shinydashboard::tabItem(tabName = "global_distr",
           shiny::h2("Global comparison"),
@@ -231,7 +232,9 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
                    shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)
                                    ),
                    shiny::tabPanel("isoforms_boxplot",shiny::plotOutput('isoforms_boxplot') %>% shinycssloaders::withSpinner(type = 4)
-                   ),
+                                   ),
+                   shiny::tabPanel("virtual gel",shiny::plotOutput('virtual_gel') %>% shinycssloaders::withSpinner(type = 4),
+                                   shiny::sliderInput("virtual_gel_bw",min=0.1,max=10,step=0.1,value=1,label = "smoothing bandwitdth to be used ")),
                    shiny::tabPanel("volcano plot polya",plotly::plotlyOutput('polya_volcano') %>% shinycssloaders::withSpinner(type = 4)))),
           shiny::fluidRow(
             shinydashboard::box(shiny::actionButton("compute_diff_polya",
@@ -417,6 +420,30 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         suppressWarnings(plotly::plotly_empty())
       }
     })
+
+    # Show boxplot of estimated polya lengths for selected transcript
+    output$virtual_gel = shiny::renderPlot({
+
+
+      summary_table = values$polya_statistics_summary_table
+
+      if (length(input$diff_polya_rows_selected)>0) {
+        selected_row <- input$diff_polya_rows_selected
+        selected_transcript = summary_table[selected_row,]$transcript
+
+        data_transcript = data_transcript()
+
+        polya_virtual_gel <- plot_virtual_gel(input_data = data_transcript,groupingFactor = input$groupingFactor,kernel_from =input$scale_limit_low,kernel_to = input$scale_limit_high,valuesColumn="polya_length",density_bw = input$virtual_gel_bw)
+        polya_virtual_gel$plot <- polya_virtual_gel$plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90))
+        print(polya_virtual_gel$plot)
+        #plotly::ggplotly(polya_boxplot)
+      }
+      else {
+        print("no data")
+        suppressWarnings(plotly::plotly_empty())
+      }
+    })
+
 
     # Show denisty plot of estimated polya lengths for selected transcript
     output$polya_distribution = plotly::renderPlotly({
