@@ -48,7 +48,7 @@ annotate_with_annotables <- function(polya_data,genome) {
 #'
 #' @param polya_data polya data table to annotate
 #' @param attributes_to_get what annotations should be retrieved. Default = c('external_gene_name','description','transcript_biotype')
-#' @param transcript_id which column should be matched in the target mart
+#' @param filters which column should be matched in the target mart
 #' @param mart_to_use mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}
 #'
 #' @return a \link[tibble]{tibble}
@@ -97,10 +97,10 @@ annotate_with_biomart <- function(polya_data,attributes_to_get=c('ensembl_transc
 
 #' Title
 #'
+#' @param columns_of_annotation which columns to use
+#' @param keytype whic keytype to use
+#' @param organism whic organism database to use
 #' @param polya_data polya data table to annotate
-#' @param attributes_to_get what annotations should be retrieved. Default = c('external_gene_name','description','transcript_biotype')
-#' @param transcript_id which column should be matched in the target mart
-#' @param mart_to_use mart object created with \link[biomaRt]{useMart} or \link[biomaRt]{useEnsembl}
 #'
 #' @return a \link[tibble]{tibble}
 #' @export

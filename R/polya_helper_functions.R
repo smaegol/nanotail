@@ -28,7 +28,7 @@ gm_mean = function(x, na.rm=TRUE){
 
 #' Subsample a date frame
 #'
-#' Uses base subsetting and \link{sample} or dplyr \link[dplyr]{sample_n} or \link[dplyr{sample_frac}] to get the subset of the bigger data.frame or tibble
+#' Uses base subsetting and \link{sample} or dplyr \link[dplyr]{sample_n} or \link[dplyr]{sample_frac} to get the subset of the bigger data.frame or tibble
 #'
 #' @param input_table input table for subsampling
 #' @param groupingFactor grouping factor(s)
@@ -122,4 +122,15 @@ spread_multiple <- function(df, key, value) {
 }
 
 
-
+#' Calculates scaling vector for virtual gel plotting
+#'
+#' @param input_data input polyA table for calculation of scaling factor (count of reads)
+#' @param groupingFactor for which factor calculate counts
+#'
+#' @return named vector
+#' @export
+#'
+calculate_scaling_vector_for_virutal_gel <- function(input_data,groupingFactor) {
+  scaling_vector <- summarize_polya(input_data,transcript_id_column = groupingFactor) %>% dplyr::select(!!rlang::sym(groupingFactor),counts) %>% tibble::deframe()
+  return(scaling_vector)
+  }
