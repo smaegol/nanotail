@@ -137,7 +137,7 @@ calculate_scaling_vector_for_virutal_gel <- function(input_data,groupingFactor) 
 
 
 
-StatMedianLine <- ggplot2::ggproto("StatMedianLine", Stat,
+StatMedianLine <- ggplot2::ggproto("StatMedianLine", ggplot2::Stat,
                           compute_group = function(data, scales) {
                             transform(data, yintercept=median(y))
                           },
