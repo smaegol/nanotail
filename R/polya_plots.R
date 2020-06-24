@@ -252,7 +252,7 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   }
   
   transcripts_boxplot <- transcripts_boxplot + 
-    ggplot2::facet_grid(. ~ group, drop = T, scales = "free_x") + 
+    ggplot2::facet_grid(. ~ !!rlang::sym(groupingFactor, drop = T, scales = "free_x") + 
     nanotail::stat_median_line(color = "red", linetype = "dashed") + 
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, vjust = 0)) + 
     ggplot2::scale_x_discrete() + 
