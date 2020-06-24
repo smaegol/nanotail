@@ -161,7 +161,7 @@ StatMedianLine <- ggplot2::ggproto("StatMedianLine", ggplot2::Stat,
 stat_median_line <- function(mapping = NULL, data = NULL, geom = "hline",
                              position = "identity", na.rm = FALSE, show.legend = NA, 
                              inherit.aes = TRUE, ...) {
-  layer(
+  ggplot2::layer(
     stat = StatMedianLine, data = data, mapping = mapping, geom = geom, 
     position = position, show.legend = show.legend, inherit.aes = inherit.aes,
     params = list(na.rm = na.rm, ...)
