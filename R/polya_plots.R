@@ -234,7 +234,7 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   polya_data <- polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::add_count() %>% dplyr::ungroup() %>% dplyr::mutate(label = paste0("(n=", n, ")"))
   
  
-  transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x="label",y="polya_length",fill=fill_by)) + geom_violin(trim = FALSE)
+  transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x="label",y="polya_length",fill=fill_by)) + ggplot2::geom_violin(trim = FALSE)
   
   if(add_points) {
     points_counts<-polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::count()
@@ -243,7 +243,7 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
     }
   }
   if(add_boxplot) {
-  transcripts_boxplot <- transcripts_boxplot + geom_boxplot(
+  transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot(
     width = 0.2,
     fill = "white",
     notch = TRUE,
@@ -252,11 +252,11 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   }
   
   transcripts_boxplot <- transcripts_boxplot + 
-    facet_grid(. ~ group, drop = T, scales = "free_x") + 
+    ggplot2::facet_grid(. ~ group, drop = T, scales = "free_x") + 
     nanotail::stat_median_line(color = "red", linetype = "dashed") + 
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, vjust = 0)) + 
-    scale_x_discrete() + 
-    xlab("") 
+    ggplot2::scale_x_discrete() + 
+    ggplot2::xlab("") 
   
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
   
