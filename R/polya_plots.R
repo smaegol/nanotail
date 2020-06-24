@@ -49,8 +49,8 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
     if (!is.na(condition1)) {
       if(!is.na(condition2)) {
-        assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
-        assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
+        assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",groupingFactor," (groupingFactor)"))
+        assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",groupingFactor," (groupingFactor)"))
         assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
         polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
       }
@@ -150,8 +150,8 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 
   if (!is.na(condition1)) {
     if(!is.na(condition2)) {
-      assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",grouping_factor," (groupingFactor)"))
-      assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",grouping_factor," (groupingFactor)"))
+      assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",groupingFactor," (groupingFactor)"))
+      assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",groupingFactor," (groupingFactor)"))
       assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
       polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
     }
@@ -181,6 +181,87 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
   return(transcripts_boxplot)
 }
 
+
+
+
+
+#' Plots violin plot of estimated polya lengths, other version
+#'
+#' @param polya_data input table with polyA predictions
+#' @param groupingFactor which factor to use for grouping
+#' @param condition1 First condition to include on the plot
+#' @param condition2 Second condition to include on the plot
+#' @param violin Should violin plot be plotted instead of boxplot?
+#' @param additional_grouping_factor additional coloring grouping factor
+#' @param add_points should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}
+#' @param max_points maximum number of points to be plotted if add_points is specified
+#' @param add_boxplot Add boxplot inside violin?
+#'
+#' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
+
+#' @return \link[ggplot2]{ggplot} object
+#' @export
+#'
+plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,...) {
+  
+  
+  if (missing(polya_data)) {
+    stop("PolyA predictions are missing. Please provide a valid polya_data argument",
+         call. = FALSE)
+  }
+  
+  assertthat::assert_that(groupingFactor %in% colnames(polya_data),msg=paste0(groupingFactor," is not a column of input dataset"))
+  if(!is.na(additional_grouping_factor)) {
+    assertthat::assert_that(additional_grouping_factor %in% colnames(polya_data),msg=paste0(additional_grouping_factor," is not a column of input dataset"))
+  }
+  
+  if(!is.na(fill_by)) {
+    assertthat::assert_that(fill_by %in% colnames(polya_data),msg=paste0(additional_grouping_factor," is not a column of input dataset"))
+  }
+  else{
+    fill_by = groupingFactor
+  }
+  
+  if (!is.na(condition1)) {
+    if(!is.na(condition2)) {
+      assertthat::assert_that(condition1 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition1," is not a level of ",groupingFactor," (groupingFactor)"))
+      assertthat::assert_that(condition2 %in% levels(polya_data[[groupingFactor]]),msg=paste0(condition2," is not a level of ",groupingFactor," (groupingFactor)"))
+      assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
+      polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
+    }
+  }
+  
+  polya_data <- polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::add_count() %>% dplyr::ungroup() %>% dplyr::mutate(label = paste0("(n=", n, ")"))
+  
+ 
+  transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x="label",y="polya_length",fill=fill_by)) + geom_violin(trim = FALSE)
+  
+  if(add_points) {
+    points_counts<-polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::count()
+    if (!any(points_counts$n>max_points)) {
+      transcripts_boxplot <- transcripts_boxplot + ggforce::geom_sina(position=ggplot2::position_dodge())
+    }
+  }
+  if(add_boxplot) {
+  transcripts_boxplot <- transcripts_boxplot + geom_boxplot(
+    width = 0.2,
+    fill = "white",
+    notch = TRUE,
+    outlier.shape = NA
+  )  
+  }
+  
+  transcripts_boxplot <- transcripts_boxplot + 
+    facet_grid(. ~ group, drop = T, scales = "free_x") + 
+    nanotail::stat_median_line(color = "red", linetype = "dashed") + 
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, vjust = 0)) + 
+    scale_x_discrete() + 
+    xlab("") 
+  
+  transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
+  
+  return(transcripts_boxplot)
+}
 
 #' Title
 #'

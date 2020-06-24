@@ -228,7 +228,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
             shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
             shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
                    shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4),
-                                   shiny::checkboxInput("violin_instead_of_boxplot",value=FALSE,label = "Use violin plot instead of boxplot?")),
+                                
+                                   shiny::selectInput("color_by","Color by",choices=grouping_factor_levels),shiny::checkboxInput("add_boxplot",value=FALSE,label = "Add boxplot?")),
                    shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)
                                    ),
                    shiny::tabPanel("isoforms_boxplot",shiny::plotOutput('isoforms_boxplot') %>% shinycssloaders::withSpinner(type = 4)
@@ -381,10 +382,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         data_transcript = data_transcript()
 
         if (input$plot_only_selected_conditions) {
-          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, violin=input$violin_instead_of_boxplot)
+          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, add_boxplot=input$add_boxplot,fill_by=input$color_by)
         }
         else {
-          polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot)
+          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, add_boxplot=input$add_boxplot,fill_by=input$color_by)
         }
 
         plotly::ggplotly(polya_boxplot)
@@ -410,7 +411,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
         data_transcript = data_transcript_annot()
 
-        polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = "ensembl_transcript_id_short",scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=input$violin_instead_of_boxplot,additional_grouping_factor = input$groupingFactor)
+        polya_boxplot <- plot_polya_boxplot(polya_data = data_transcript,groupingFactor = "ensembl_transcript_id_short",scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, violin=FALSE,additional_grouping_factor = input$groupingFactor)
         polya_boxplot <- polya_boxplot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90))
         print(polya_boxplot)
         #plotly::ggplotly(polya_boxplot)

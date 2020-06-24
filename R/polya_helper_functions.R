@@ -134,3 +134,36 @@ calculate_scaling_vector_for_virutal_gel <- function(input_data,groupingFactor) 
   scaling_vector <- summarize_polya(input_data,transcript_id_column = groupingFactor) %>% dplyr::select(!!rlang::sym(groupingFactor),counts) %>% tibble::deframe()
   return(scaling_vector)
   }
+
+
+
+StatMedianLine <- ggproto("StatMedianLine", Stat,
+                          compute_group = function(data, scales) {
+                            transform(data, yintercept=median(y))
+                          },
+                          required_aes = c("x", "y")
+)
+
+#' Helper function for calculating median stat for violin/boxpolot ggplot plots
+#'
+#' @param mapping 
+#' @param data 
+#' @param geom 
+#' @param position 
+#' @param na.rm 
+#' @param show.legend 
+#' @param inherit.aes 
+#' @param ... 
+#'
+#' @return
+#' @export
+#'
+stat_median_line <- function(mapping = NULL, data = NULL, geom = "hline",
+                             position = "identity", na.rm = FALSE, show.legend = NA, 
+                             inherit.aes = TRUE, ...) {
+  layer(
+    stat = StatMedianLine, data = data, mapping = mapping, geom = geom, 
+    position = position, show.legend = show.legend, inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, ...)
+  )
+}

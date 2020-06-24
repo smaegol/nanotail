@@ -4,7 +4,9 @@
 \name{axis_elements_size}
 \alias{axis_elements_size}
 \title{Default theme for ggplot2-based plots in the NanoTail package}
-\format{An object of class \code{numeric} of length 1.}
+\format{
+An object of class \code{numeric} of length 1.
+}
 \usage{
 axis_elements_size
 }
