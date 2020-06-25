@@ -226,8 +226,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         shinydashboard::tabItem(tabName = "diff_polya",
           shiny::fluidRow(
             shinydashboard::box(DT::dataTableOutput('diff_polya'),collapsible = TRUE,height = '90%'),
-            shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="500px",
-                   shiny::tabPanel("boxplot",plotly::plotlyOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4),
+            shinydashboard::tabBox(title = "per transcript plots",id="tabset1", height="550px",
+                   shiny::tabPanel("boxplot",shiny::plotOutput('polya_boxplot') %>% shinycssloaders::withSpinner(type = 4),
                                 
                                    shiny::selectInput("color_by","Color by",choices=grouping_factor_levels),shiny::checkboxInput("add_boxplot",value=FALSE,label = "Add boxplot?")),
                    shiny::tabPanel("distribution plot",plotly::plotlyOutput('polya_distribution') %>% shinycssloaders::withSpinner(type = 4)
@@ -372,7 +372,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
 
     # Show boxplot of estimated polya lengths for selected transcript
-    output$polya_boxplot = plotly::renderPlotly({
+    output$polya_boxplot = shiny::renderPlot({
       summary_table = values$polya_statistics_summary_table
 
 
@@ -388,10 +388,12 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
           polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, add_boxplot=input$add_boxplot,fill_by=input$color_by)
         }
 
-        plotly::ggplotly(polya_boxplot)
+        #plotly::ggplotly(polya_boxplot)
+        print(polya_boxplot)
       }
       else {
-        suppressWarnings(plotly::plotly_empty())
+        #suppressWarnings(plotly::plotly_empty())
+        print(no_plot)
       }
     })
 
