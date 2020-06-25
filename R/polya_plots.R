@@ -662,13 +662,13 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
 #'
 plot_virtual_gel <- function(input_data, groupingFactor, valuesColumn, density_bw = 0.6, kernel="gaussian",shift_bands=0,kernel_from=0,kernel_to=NA,scale_by_size=T,scaling_vector=NA) {
 
-  data_for_gel <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::mutate(no_sequences=n()) %>% tidyr::nest()
+  data_for_gel <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::mutate(no_sequences=dplyr::n()) %>% tidyr::nest()
 
 
 
   if (!is.na(scaling_vector)) {
     #data_for_gel$scale <- scaling_vector
-    data_counts <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarise(no_sequences=n())
+    data_counts <- input_data  %>% dplyr::select(!!rlang::sym(groupingFactor),!!rlang::sym(valuesColumn)) %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::summarise(no_sequences=dplyr::n())
     data_counts <- tibble::enframe(scaling_vector) %>% dplyr::inner_join(data_counts,by=c("name" = groupingFactor))
     data_counts <- data_counts %>% dplyr::ungroup() %>% dplyr::mutate(data_ratio=no_sequences/value) %>% dplyr::mutate(scale = data_ratio/max(data_ratio)) %>% dplyr::select(name,scale)
     #data_counts$scale <- data_counts$data_ratio/max(data_counts$data_ratio)
