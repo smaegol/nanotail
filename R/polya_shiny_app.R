@@ -174,7 +174,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
       shiny::selectInput("groupingFactor","Group by",choices=grouping_factor_levels),
       shiny::uiOutput("condition1UI"),
       shiny::uiOutput("condition2UI"),
-      shiny::checkboxInput("plot_only_selected_conditions","Plot only selected conditions",value=FALSE)
+      shiny::checkboxInput("plot_only_selected_conditions","Plot only selected conditions",value=FALSE),
+      shiny::actionButton("clear_selection",
+                          shiny::HTML("Clear selection"),
+                          icon = shiny::icon("spinner"))
     ),
 
     # dashboard body definition ---------------------------------------------------------
@@ -349,7 +352,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
     # Output elements rendering section  ---------------------------------------------------------
 
     ## Use DT::datatable for tables
-    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip',scrollX = TRUE))
+    output$diff_polya = DT::renderDataTable(values$polya_statistics_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'multiple',selected = 1,target = "row"),options = list(dom = 'ftip',scrollX = TRUE))
     output$diff_exp_table = DT::renderDataTable(values$diffexp_summary_table %>% dplyr::rename_all(dplyr::funs(stringr::str_replace_all(.,"_"," "))), server = TRUE, selection=list(mode = 'single',selected = 1,target = "row"),options = list(dom = 'ftip',scrollX = TRUE))
     output$annotation_table = DT::renderDataTable(data_annotation(), server = TRUE, selection=list(mode = 'multiple',selected = 1,target = "row"),options = list(dom = 'ftip',scrollX = TRUE))
 
@@ -378,7 +381,14 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
       if (length(input$diff_polya_rows_selected)>0) {
         selected_row <- input$diff_polya_rows_selected
-        selected_transcript = summary_table[selected_row,]$transcript
+        if (length(input$diff_polya_rows_selected)>1) {
+          selected_transcript = paste0(summary_table[selected_row,]$transcript,collapse=",")
+        } 
+        else {
+          selected_transcript = summary_table[selected_row,]$transcript
+        }
+        cat(selected_transcript)
+        cat(selected_row)
         data_transcript = data_transcript()
 
         if (input$plot_only_selected_conditions) {
@@ -514,6 +524,13 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
       }
     })
 
+    diff_polya_proxy <- DT::dataTableProxy('diff_polya')
+    
+    # Calculate differential adenylation if action button was clicked
+    shiny::observeEvent(input$clear_selection,
+                        {
+                          diff_polya_proxy %>% DT::selectRows(NULL)
+                        })
 
 
     ## Differential expression analysis section  ---------------------------------------------------------
