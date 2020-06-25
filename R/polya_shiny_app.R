@@ -467,7 +467,13 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
         if (length(input$diff_polya_rows_selected)>0) {
           selected_row <- input$diff_polya_rows_selected
-          selected_transcript = summary_table[selected_row,]$transcript
+          if (length(input$diff_polya_rows_selected)>1) {
+            selected_transcript = paste0(summary_table[selected_row,]$transcript,collapse=",")
+          } 
+          else {
+            selected_transcript = summary_table[selected_row,]$transcript
+          }
+          
           data_transcript = data_transcript()
           if (input$plot_only_selected_conditions) {
             transcript_distribution_plot <- plot_polya_distribution(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_x_limit_low = input$scale_limit_low,scale_x_limit_high = input$scale_limit_high,color_palette = input$col_palette, plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp,show_center_values=input$center_values_for_distribution_plot)
@@ -488,7 +494,8 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
 
       # show only if differential adenylation analysis was already done
       if("fold_change" %in% colnames(values$polya_table_for_volcano)) {
-        volcanoPlot <- plot_volcano(input_data =values$polya_table_for_volcano,color_palette = input$col_palette)
+        
+        volcanoPlot <- plot_volcano(input_data =values$polya_table_for_volcano,color_palette = input$col_palette,transcript_id_column = "transcript",labels=input$diff_polya_rows_selected)
         plotly::ggplotly(volcanoPlot)
       }
       else {

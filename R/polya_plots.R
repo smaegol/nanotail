@@ -105,12 +105,14 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 
   distribution_plot <- distribution_plot + ggplot2::xlab("poly(A) length")
 
+  distribution_plot <- distribution_plot + nanotail_ggplot2_theme
+  
   distribution_plot <- .basic_aesthetics(distribution_plot,...)
 
 
 
 
-  distribution_plot <- distribution_plot + nanotail_ggplot2_theme
+  
 
   return(distribution_plot)
 
@@ -427,9 +429,20 @@ plot_volcano <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10
 
   if (labels) {
     if(!missing(transcript_id_column)) {
-      labels_df <- input_data %>% dplyr::arrange(padj) %>% dplyr::filter(grepl("^FDR",significance))
-      labels_df <- head(labels_df,nlabels)
-      volcano_plot <- volcano_plot + ggrepel::geom_text_repel(data=labels_df,ggplot2::aes(label=!!rlang::sym(transcript_id_column)),colour="black")
+      if (labels==TRUE) {
+        labels_df <- input_data %>% dplyr::arrange(padj) %>% dplyr::filter(grepl("^FDR",significance))
+        labels_df <- head(labels_df,nlabels)
+        volcano_plot <- volcano_plot + ggrepel::geom_text_repel(data=labels_df,ggplot2::aes(label=!!rlang::sym(transcript_id_column)),colour="black")
+      }
+      else {
+        if (is.numeric(labels)) {
+          labels_df <- input_data[labels,]
+          volcano_plot <- volcano_plot + ggrepel::geom_text_repel(data=labels_df,ggplot2::aes(label=!!rlang::sym(transcript_id_column)),colour="black") + geom_point(data=labels_df,shape=23,aes(fill=significance),color="green")
+        }
+        else {
+          message("Wrong labels specification") 
+        }
+      }
     }
     else {
       warning("transcript_id_column is missing. Labels will not be produced")
