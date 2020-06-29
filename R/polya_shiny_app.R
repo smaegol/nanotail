@@ -392,10 +392,10 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
         data_transcript = data_transcript()
 
         if (input$plot_only_selected_conditions) {
-          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, add_boxplot=input$add_boxplot,fill_by=input$color_by)
+          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript,condition1 = input$condition1_diff_exp,condition2 = input$condition2_diff_exp, add_boxplot=input$add_boxplot,fill_by=input$color_by,color_mode='fill')
         }
         else {
-          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, add_boxplot=input$add_boxplot,fill_by=input$color_by)
+          polya_boxplot <- plot_polya_violin(polya_data = data_transcript,groupingFactor = input$groupingFactor,scale_y_limit_low = input$scale_limit_low,scale_y_limit_high = input$scale_limit_high,color_palette = input$col_palette,plot_title = selected_transcript, add_boxplot=input$add_boxplot,fill_by=input$color_by,color_mode='fill')
         }
 
         #plotly::ggplotly(polya_boxplot)
