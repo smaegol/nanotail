@@ -133,7 +133,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
   if (!is.na(precomputed_polya_statistics)) {
     #assertthat::assert_that(is.list(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
     #assertthat::assert_that("summary" %in% names(precomputed_polya_statistics),msg="Please provide the output of calculate_polya_stats() as precomputed_polya_statistics")
-    initial_summary_table = precomputed_polya_statistics  %>% dplyr::select(transcript,dplyr::ends_with("_counts"),dplyr::ends_with("_polya_median"),p.value,padj,effect_size)
+    initial_summary_table = precomputed_polya_statistics  %>% dplyr::select(transcript,dplyr::ends_with("_counts"),dplyr::ends_with("_polya_median"),p.value,padj,contains("effect_size"))
     initial_table_for_volcano <- precomputed_polya_statistics %>% dplyr::select(transcript,fold_change,padj,significance)
   }
   else {
