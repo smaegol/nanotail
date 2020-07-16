@@ -199,7 +199,7 @@ stat_codes_list = list(OK = "OK",
     }
     else {
       #calculate cohen's d parameter
-      cohend<-effsize::cohen.d(data=polya_data,as.formula(statistics_formula))$estimate
+      cohend<-effsize::cohen.d(data=polya_data,as.formula(paste0("polya_length ~",grouping_factor)))$estimate
       if (stat_test=="Wilcoxon") {
         #print(polya_data$transcript2)
         stats <- suppressWarnings(wilcox.test(as.formula(statistics_formula),polya_data))$p.value
