@@ -61,17 +61,21 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
   polya_data_stat <-
     polya_data %>% dplyr::mutate(transcript2=transcript) %>% dplyr::group_by(.dots = c(transcript_id_column)) %>% tidyr::nest()
 
+  #future::plan(future::multiprocess())
   polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=purrr::map(data,.polya_stats,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% tidyr::unnest()
-
+  message("calculating statistics")
+  #polya_data_stat <- polya_data_stat %>% dplyr::mutate(stats=furrr::future_map(data,.polya_stats,grouping_factor=grouping_factor,stat_test=stat_test,min_reads=min_reads,...)) %>% dplyr::select(-data) %>% tidyr::unnest()
+  message("Finished")
   if (add_summary) {
     polyA_data_stat_summary <- summarize_polya(polya_data,summary_factors = grouping_factor,transcript_id_column = transcript_id_column) %>% dplyr::select(!!rlang::sym(transcript_id_column),counts,!!rlang::sym(grouping_factor),!!rlang::sym(paste0("polya_",length_summary_to_show))) %>% spread_multiple(!!rlang::sym(grouping_factor),c(counts,!!rlang::sym(paste0("polya_",length_summary_to_show))))
     polya_data_stat <- polya_data_stat %>% dplyr::full_join(polyA_data_stat_summary,by=transcript_id_column)
     polya_data_stat$length_diff <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] - polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
     polya_data_stat$fold_change <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] / polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
   }
-
+  message("Adjusting p.value")
   polya_data_stat$padj <- p.adjust(polya_data_stat$p.value, method = "BH")
-
+  polya_data_stat<- polya_data_stat %>% dplyr::mutate(effect_size=dplyr::case_when((abs(cohen_d))<0.2 ~ "negligible",(abs(cohen_d)<0.5) ~ "small", (abs(cohen_d)<0.8) ~ "medium",(abs(cohen_d)>=0.8) ~ "large",TRUE ~ "NA"))
+  
   # create significance factor
   polya_data_stat <-
     polya_data_stat %>% dplyr::mutate(significance = dplyr::case_when(is.na(padj)  ~ "NotSig",
@@ -165,6 +169,7 @@ stat_codes_list = list(OK = "OK",
   group_counts = polya_data  %>% dplyr::group_by(.dots = c(grouping_factor)) %>% dplyr::count()
 
   stats <- NA
+  cohend <- NA
   if (use_dwell_time) {
     statistics_formula <- paste0("dwell_time ~",grouping_factor)
   }
@@ -176,7 +181,7 @@ stat_codes_list = list(OK = "OK",
     warning("custom_glm_formula specified but glm is not used for statistics calculation. Formula will be ignored")
   }
 
-
+ 
   if (nrow(group_counts)==2) {
     if (group_counts[1,]$n < min_reads) {
       if (group_counts[2,]$n < min_reads) {
@@ -193,6 +198,8 @@ stat_codes_list = list(OK = "OK",
       stats_code = "G_LC"
     }
     else {
+      #calculate cohen's d parameter
+      cohend<-effsize::cohen.d(data=polya_data,as.formula(statistics_formula))$estimate
       if (stat_test=="Wilcoxon") {
         #print(polya_data$transcript2)
         stats <- suppressWarnings(wilcox.test(as.formula(statistics_formula),polya_data))$p.value
@@ -221,6 +228,7 @@ stat_codes_list = list(OK = "OK",
           polya_data <- polya_data %>% dplyr::mutate(polya_length = ifelse(polya_length==0,1,polya_length))
           mcp_call <- paste0("multcomp::mcp(",grouping_factor,' = "Tukey")')
           stats <- summary(multcomp::glht(glm(formula = as.formula(statistics_formula),data=polya_data),eval(parse(text = mcp_call))))$test$pvalues[1]
+          
           #polya_data_stat <- polya_data_stat  %>% dplyr::mutate(stats = suppressWarnings(coef(summary(glm(formula = as.formula(statistics_formula))))[2,4]))
         }
         else{
@@ -244,7 +252,7 @@ stat_codes_list = list(OK = "OK",
   }
 
 
-  stats<-tibble::tibble(p.value=stats,stats_code=as.character(stats_code))
+  stats<-tibble::tibble(p.value=stats,stats_code=as.character(stats_code),cohen_d=cohend)
 
   return(stats)
 
