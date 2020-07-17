@@ -220,6 +220,11 @@ stat_codes_list = list(OK = "OK",
               valid_glm_groups = FALSE
             }
           }
+          # check that each explanatory variable has the same number of levels for each other(for example batches for batch effect formula)
+          # will fail if there is any intersect of explanatory variables with 0 count
+          if(!all(table(polya_data %>% dplyr::select(glm_groups))>0)) {
+              valid_glm_groups = FALSE
+          }
           statistics_formula = custom_glm_formula
         }
 
