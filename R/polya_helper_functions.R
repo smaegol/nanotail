@@ -91,10 +91,11 @@ subsample_table <- function(input_table,groupingFactor=NA,subsample=NA)
 
 
 
-#' Default theme for ggplot2-based plots in the NanoTail package
-#'
+
 axis_elements_size=15
 axis_titles_size=18
+#' Default theme for ggplot2-based plots in the NanoTail package
+#' @export
 nanotail_ggplot2_theme <- ggplot2::theme(axis.title = ggplot2::element_text(size=axis_titles_size),axis.text = ggplot2::element_text(size=axis_elements_size),legend.text = ggplot2::element_text(size=axis_elements_size),legend.title = ggplot2::element_text(size=axis_titles_size))
 
 

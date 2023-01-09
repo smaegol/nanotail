@@ -474,3 +474,148 @@ calculate_diff_exp_binom <- function(polya_data,grouping_factor=NA,condition1=NA
 }
 
 
+#' Compute Kruskal-Wallis test on poly(A) data 
+#'
+#' @param input_data - input tibble/data.frame with nanopolish output.  
+#' @param grouping_factor - which column contains group information
+#' @param transcript_id column which transcript ids 
+#'
+#' @return data.frame with statistis
+#' @export
+#'
+#' @examples 
+#' \dontrun{
+#' polya_table <- nanotail::read_polya_single("nanopolish.tsv")
+#' kruskal_polya(polya_table,grouping_factor="group",transcript_id="transcript",verbose=T)
+#' }
+kruskal_polya <- function(input_data,grouping_factor="sample_name",transcript_id="transcript",verbose=F) {
+  
+  data_frame_check<-checkmate::assert_data_frame(input_data,min.rows=10) #minimum 10 rows in the input data.frame required
+  groups_check<-checkmate::assertFactor(input_data[[grouping_factor]],min.levels=2,empty.levels.ok = F) #at least two levels of grouping factor required
+  
+  if (verbose) {
+    message("Correct input data provided")
+  }
+  
+  input_data_split <- split(input_data,input_data[[transcript_id]]) # split data.frame by transcript
+  if (verbose) {
+    message("succesfully splitted data by transcripts")
+  }
+  
+  return_stats<-do.call(rbind,lapply(input_data_split,function(x) {.kruskal_polya(x,grouping_factor = grouping_factor,verbose=verbose) })) # compute statistics using helper function
+  
+  if (verbose) {
+    message("Finished statistics computation")
+  }
+  
+  return(return_stats)
+}
+
+#' Compute Kruskal-Wallis test on single poly(A) data
+#'
+#' @param input_data input data.frame (for single transcript) 
+#' @param grouping_factor which column contains group information
+#'
+#' @return data.frame with test statistics
+.kruskal_polya <- function(input_data,grouping_factor="sample_name",verbose=F) {
+  
+  data_frame_check<-checkmate::check_data_frame(input_data,min.rows=10) #minimum 10 rows (observations) required in the data.frame
+  groups_check<-checkmate::checkFactor(input_data[[grouping_factor]],min.levels=2,empty.levels.ok = F) #at least 2 factor levels
+  
+  # if all asserts are met, do statistics computation
+  if (is.logical(data_frame_check) & isTRUE(data_frame_check) & is.logical(groups_check) & isTRUE(groups_check)) {
+    test_formula <- as.formula(paste("polya_length ~ ",grouping_factor,sep=""))
+    kruskal_stat <- kruskal.test(test_formula,input_data) # kruskal test
+    test_effectsize <- effectsize::rank_epsilon_squared(test_formula,input_data) #effect size  using rank_epsilon_squared
+    return_data_frame <- data.frame(df=kruskal_stat$parameter,p.value=as.numeric(kruskal_stat$p.value),statistic=kruskal_stat$statistic,effectsize=test_effectsize$rank_epsilon_squared,data_name=kruskal_stat$data.name,data.frame(t(summary(input_data[[grouping_factor]]))))
+  }
+  else {
+    #when asserts where not true, return associated messages (when verbose) and data.frame with NAs instead of statistics values
+    if (verbose) {
+      message(paste(data_frame_check,groups_check))
+    }
+    return_data_frame<-data.frame(df=NA,p.value=NA,statistic=NA,data_name=NA,data.frame(t(summary(input_data[[grouping_factor]]))))
+  }
+  
+}
+
+
+#' Compute Kruskal-Wallis test on poly(A) data 
+#'
+#' @param input_data - input tibble/data.frame with nanopolish output.  
+#' @param grouping_factor - which column contains group information
+#' @param transcript_id column which transcript ids 
+#' @param verbose verbose output 
+#' @param verbosity_level how verbose the output should be (levels 1 - little verbosity, or 2 - very verbose)
+#'
+#' @return data.frame with statistis
+#' @export
+#'
+#' @examples 
+#' \dontrun{
+#' polya_table <- nanotail::read_polya_single("nanopolish.tsv")
+#' kruskal_polya(polya_table,grouping_factor="group",transcript_id="transcript",verbose=T)
+#' }
+kruskal_polya <- function(input_data,grouping_factor="sample_name",transcript_id="transcript",verbose=F,verbosity_level=1) {
+  
+  data_frame_check<-checkmate::assert_data_frame(input_data,min.rows=10) #minimum 10 rows in the input data.frame required
+  groups_check<-checkmate::assertFactor(input_data[[grouping_factor]],min.levels=2,empty.levels.ok = F) #at least two levels of grouping factor required
+  
+  if (verbose) {
+    message("Correct input data provided")
+  }
+  
+  input_data_split <- split(input_data,input_data[[transcript_id]]) # split data.frame by transcript
+  if (verbose) {
+    message("succesfully splitted data by transcripts")
+  }
+  
+  return_stats<-do.call(rbind,future.apply::future_lapply(input_data_split,function(x) {.kruskal_polya(x,grouping_factor = grouping_factor,verbose=verbose,verbosity_level = verbosity_level) })) # compute statistics using helper function
+  
+  
+  return_stats$padj <- p.adjust(return_stats$p.value,method="BH") # adjust p.values
+  
+  if (verbose) {
+    message("Adjusted p.values using Benjamini-Hochberg correction")
+  }
+  
+  return_stats$transcript <- rownames(return_stats)
+  rownames(return_stats) <- NULL
+  return_stats <- return_stats[,c("transcript","p.value","padj","statistic","effectsize")]
+  
+  if (verbose) {
+    message("Finished statistics computation")
+  }
+  
+  return(return_stats)
+}
+
+#' Compute Kruskal-Wallis test on single poly(A) data
+#'
+#' @param input_data input data.frame (for single transcript) 
+#' @param grouping_factor which column contains group information
+#' @param verbose verbose output 
+#' @param verbosity_level how verbose the output should be (levels 1 - little verbosity, or 2 - very verbose) 
+#'
+#' @return data.frame with test statistics
+.kruskal_polya <- function(input_data,grouping_factor="sample_name",verbose=F,verbosity_level=1) {
+  
+  data_frame_check<-checkmate::check_data_frame(input_data,min.rows=10) #minimum 10 rows (observations) required in the data.frame
+  groups_check<-checkmate::checkFactor(input_data[[grouping_factor]],min.levels=2,empty.levels.ok = F) #at least 2 factor levels
+  
+  # if all asserts are met, do statistics computation
+  if (is.logical(data_frame_check) & isTRUE(data_frame_check) & is.logical(groups_check) & isTRUE(groups_check)) {
+    test_formula <- as.formula(paste("polya_length ~ ",grouping_factor,sep=""))
+    kruskal_stat <- kruskal.test(test_formula,data=input_data) # kruskal test
+    test_effectsize <- effectsize::rank_epsilon_squared(test_formula,data=input_data) #effect size  using rank_epsilon_squared
+    return_data_frame <- data.frame(df=kruskal_stat$parameter,p.value=as.numeric(kruskal_stat$p.value),statistic=kruskal_stat$statistic,effectsize=test_effectsize$rank_epsilon_squared,data_name=kruskal_stat$data.name,data.frame(t(summary(input_data[[grouping_factor]]))))
+  }
+  else {
+    #when asserts where not true, return associated messages (when verbose) and data.frame with NAs instead of statistics values
+    if (verbose & verbosity_level>1) {
+      message(paste(data_frame_check,groups_check))
+    }
+    return_data_frame<-data.frame(df=NA,p.value=NA,statistic=NA,effectsize=NA,data_name=NA,data.frame(t(summary(input_data[[grouping_factor]]))))
+  }
+  
+}
