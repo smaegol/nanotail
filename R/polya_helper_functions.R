@@ -168,3 +168,53 @@ stat_median_line <- function(mapping = NULL, data = NULL, geom = "hline",
     params = list(na.rm = na.rm, ...)
   )
 }
+
+
+#' Function calculating statistical mode of given vector.
+#'
+#' @param x [character] data for which the most frequent value is to be calculated 
+#' (polya_data column  with the lengths of the poly(A) tails) 
+#' 
+#' @param method [character] "density"/"value"; density mode is computed
+#' by default. 
+#' 
+#' @param na.rm [boolean] parameter defining whether to remove missing values or
+#' not. By a default set to false
+#'
+#' @return statistical mode of given vector.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'
+#' getmode(x = polya_data$tail_length,
+#'         method = "density",
+#'         na.rm = FALSE)
+#'
+#' }
+#' 
+getmode <- function(x, method ="density", na.rm = FALSE) {
+  x <- unlist(x)
+  if (na.rm) {
+    x <- x[!is.na(x)]
+  }
+  
+  if (method %in% c("value", "density", "") | is.na(method)) {
+    # Return actual mode (from the real values in dataset)
+    if (method %in% c("density", "")) {
+      
+      # Return density mode for normalized data - only for numeric!)
+      d <- density(x)
+      return(d$x[d$y==max(d$y)]) 
+      #return(modeest::mlv(x,na.rm=TRUE,method="parzen", abc=T)) #in some cases this method produces weird output
+      
+    } else if (method %in% c("value")) {
+      
+      uniqx <- unique(x)  
+      n <- length(uniqx)
+      freqx <- tabulate(match(x, uniqx))
+      modex <- freqx == max(freqx)
+      return(uniqx[which(modex)])
+    }
+  }
+}  
