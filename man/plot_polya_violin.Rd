@@ -16,6 +16,7 @@ plot_polya_violin(
   add_boxplot = TRUE,
   fill_by = NA,
   auto_scale = T,
+  transcript = NA,
   ...
 )
 }

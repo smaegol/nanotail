@@ -225,7 +225,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,...) {
+plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,transcript=NA,...) {
   
   
   if (missing(polya_data)) {
@@ -746,3 +746,33 @@ plot_virtual_gel <- function(input_data, groupingFactor, valuesColumn, density_b
 
 
 }
+
+
+#' Plot quantiles
+#'
+#' @param summarized_data - summarized data table (output of summarize_polya_per_transcript, with quantiles calculated)
+#' @param transcript_id - id of transcript to show 
+#' @param transcript_id_column - column with transcript ids
+#' @param groupBy - which column use for grouping (e.g. with timepoints)
+#'
+#' @return ggplot object
+#' @export
+#'
+plot_quantiles <- function(summarized_data,transcript_id,transcript_id_column="transcript",groupBy) {
+  
+  assertthat::assert_that(length(grep("^q_",colnames(summarized_data)))>0,msg = "Quantile columns not found in the input data")
+  
+  data_for_plot <- summarized_data
+  
+  data_for_plot <- data_for_plot %>% dplyr::select({{transcript_id_column}},{{groupBy}},dplyr::starts_with("q_"),dplyr::ends_with("median"))%>% tidyr::pivot_longer(-c( {{transcript_id_column}},{{groupBy}}),names_to="parameter",values_to = "value") 
+  
+  if (!is.null(transcript_id)) {
+
+    data_for_plot <- data_for_plot[data_for_plot[[transcript_id_column]] %in% c(transcript_id),]
+  }
+  
+  
+  quant_plot<-ggplot(data_for_plot,aes_string(x=groupBy,y="value",color="parameter")) + geom_point() + theme_bw() + geom_line(aes(group=parameter)) + ggsci::scale_color_jama() + ggtitle(transcript_id) + theme_bw() + xlab(groupBy) + ylab("polyA length")
+  return(quant_plot)
+}
+
