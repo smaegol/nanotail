@@ -16,7 +16,8 @@ plot_polya_violin(
   add_boxplot = TRUE,
   fill_by = NA,
   auto_scale = T,
-  transcript = NA,
+  transcript_id,
+  transcript_id_column = "transcript",
   ...
 )
 }

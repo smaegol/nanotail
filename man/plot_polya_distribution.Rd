@@ -15,6 +15,8 @@ plot_polya_distribution(
   ndensity = TRUE,
   mode_method = "density",
   auto_scale = T,
+  transcript_id = NULL,
+  transcript_id_column = "transcript",
   ...
 )
 }
