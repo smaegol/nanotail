@@ -27,12 +27,13 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @param subsample Subsample input table, provide either absolute number or fraction
 #' @param ndensity Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)
 #' @param mode_method method used for the mode calculation (argument to modeest::mlv method parameter)
+#' @param auto_scale automatically adjust axis scales (default=TRUE)
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
 #'
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="density",...) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="density",auto_scale=T,...) {
 
 
   if (missing(polya_data)) {
@@ -58,6 +59,10 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     if(!is.na(subsample)) {
       polya_data <- subsample_table(polya_data,groupingFactor = groupingFactor,subsample=subsample)
     }
+    if (auto_scale) {
+      upper_limit = quantile(polya_data$polya_length,probs=c(0.99))[1]
+    }
+    
     distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot,color=groupingFactor))
     if (ndensity) {
       distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::ylab("normalized density")
@@ -87,6 +92,10 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
     if(!is.na(subsample)) {
       polya_data <- subsample_table(polya_data,subsample=subsample)
     }
+    if (auto_scale) {
+      upper_limit = quantile(polya_data$polya_length,probs=c(0.99))[1]
+    }
+    
     distribution_plot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=parameter_to_plot))
     if (ndensity) {
       distribution_plot <- distribution_plot + ggplot2::geom_line(stat="density",size=1,ggplot2::aes(y=..ndensity..)) + ggplot2::ylab("normalized density")
@@ -106,6 +115,10 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
   distribution_plot <- distribution_plot + ggplot2::xlab("poly(A) length")
 
   distribution_plot <- distribution_plot + nanotail_ggplot2_theme
+  
+  if (auto_scale) {
+    distribution_plot <- distribution_plot + ggplot2::coord_cartesian(xlim=c(0,upper_limit))
+  }
   
   distribution_plot <- .basic_aesthetics(distribution_plot,...)
 
@@ -131,13 +144,13 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
 #' @param additional_grouping_factor additional coloring grouping factor
 #' @param add_points should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}
 #' @param max_points maximum number of points to be plotted if add_points is specified
-#'
+#' @param auto_scale automatically adjust axis scales (default=TRUE)
 #' @param ... parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)
 
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,...) {
+plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,auto_scale=T,...) {
 
 
   if (missing(polya_data)) {
@@ -159,6 +172,10 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
     }
   }
 
+  if (auto_scale) {
+    upper_limit = quantile(polya_data$polya_length,probs=c(0.99))[1]
+  }
+  
   if (!is.na(additional_grouping_factor)) {
     transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=groupingFactor,y="polya_length",color=additional_grouping_factor))
   }
@@ -166,7 +183,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
     transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x=groupingFactor,y="polya_length"))
   }
   if(violin) {
-    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin(position=ggplot2::position_dodge())
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_violin(position=ggplot2::position_dodge()) + ggplot2::geom_boxplot(position=ggplot2::position_dodge(),width=0.2,fill="white")
   }
   else{
     transcripts_boxplot <- transcripts_boxplot + ggplot2::geom_boxplot(position=ggplot2::position_dodge())
@@ -176,6 +193,10 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
     if (!any(points_counts$n>max_points)) {
       transcripts_boxplot <- transcripts_boxplot + ggforce::geom_sina(position=ggplot2::position_dodge())
     }
+  }
+  
+  if (auto_scale) {
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::coord_cartesian(ylim=c(0,upper_limit))
   }
 
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
@@ -204,7 +225,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,...) {
+plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,...) {
   
   
   if (missing(polya_data)) {
@@ -236,6 +257,10 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   polya_data <- polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::add_count() %>% dplyr::ungroup() %>% dplyr::mutate(label = paste0("(n=", n, ")"))
   
  
+  if (auto_scale) {
+    upper_limit = quantile(polya_data$polya_length,probs=c(0.99))[1]
+  }
+  
   transcripts_boxplot <- ggplot2::ggplot(polya_data,ggplot2::aes_string(x="label",y="polya_length",fill=fill_by)) + ggplot2::geom_violin(trim = FALSE)
   
   if(add_points) {
@@ -255,10 +280,16 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   
   transcripts_boxplot <- transcripts_boxplot + 
     ggplot2::facet_grid(reformulate(groupingFactor,"."), drop = T, scales = "free_x") + 
-    nanotail::stat_median_line(color = "red", linetype = "dashed") + 
+    ggplot2::stat_summary(fun = "median",geom="hline",ggplot2::aes(yintercept=..y..),linetype="dashed",color="red") + 
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, vjust = 0)) + 
     ggplot2::scale_x_discrete() + 
     ggplot2::xlab("") 
+  
+  if (auto_scale) {
+    transcripts_boxplot <- transcripts_boxplot + ggplot2::coord_cartesian(ylim=c(0,upper_limit))
+  }
+  
+  
   
   transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
   
@@ -303,10 +334,10 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
 
   if(!is.na(points_coloring_factor)){
     assertthat::assert_that(points_coloring_factor %in% colnames(polya_data_summarized),msg = "Please provide valid points_coloring_factor as an input")
-    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor),!!rlang::sym(points_coloring_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor),!!rlang::sym(points_coloring_factor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::pivot_wider(names_from=groupingFactor,values_from = "counts_sum")
   }
   else {
-    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::spread_(groupingFactor,"counts_sum")
+    polya_data_summarized_counts_xy<-polya_data_summarized %>% dplyr::group_by(!!rlang::sym(transcript_id_column),!!rlang::sym(groupingFactor)) %>% dplyr::summarize(counts_sum=sum(counts)) %>% tidyr::pivot_wider(names_from=groupingFactor,values_from = "counts_sum")
   }
   polya_data_summarized_counts_xy[is.na(polya_data_summarized_counts_xy)] <- 0
 

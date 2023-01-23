@@ -15,6 +15,7 @@ plot_polya_violin(
   max_points = 500,
   add_boxplot = TRUE,
   fill_by = NA,
+  auto_scale = T,
   ...
 )
 }

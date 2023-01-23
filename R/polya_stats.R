@@ -299,7 +299,62 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
   return(polya_data_summarized)
 }
 
+calculate_quantiles <- function(x,probs=c(0.1,0.9)) {
+  
+  data.frame(quantile_val=quantile(x,probs),quantile=probs)
+}
 
+
+#' Summarize poly(A) data per transcript
+#'
+#' @param polya_data input table with poly(A) data. 
+#' @param summary_factors vector of grouping columns. Set to NULL to omit grouping
+#' @param transcript_id_column column with transcript identifier. Default to "transcript"
+#' @param summary_functions list of summary functions. Set to NA to get only counts per transcript
+#' @param quantiles vector with quantile values (optional)
+#'
+#' @return a tibble with summarized poly(A) length data
+#' @export 
+#'
+#' @examples
+summarize_polya_per_transcript <- function(polya_data,groupBy=NULL,transcript_id_column=transcript,summary_functions=list("median","mean"),quantiles=NA) {
+  
+  if (missing(polya_data)) {
+    stop("PolyA predictions are missing. Please provide a valid polya_data argument",
+         call. = FALSE)
+  }
+  
+  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  #  assertthat::assert_that(assertive::is_character(summary_factors),msg = "Non-character argument is not allowed for `summary factors`. Please provide either string or vector of strings")
+  #assertthat::assert_that(all(as.character(summary_factors) %in% colnames(polya_data)),msg="Non-existent column name provided as the argument (summary_factors)")
+  
+  #summary_label = paste0("polya_",summary_function)
+  
+  
+  if(!is.na(summary_functions)) {
+  
+  names(summary_functions)= summary_functions
+  summary_functions <- sapply(summary_functions,get)
+  
+    polya_data_summarized <-
+    polya_data %>% dplyr::ungroup() %>% dplyr::group_by(across(c({{ transcript_id_column }},{{ groupBy }}))) %>% dplyr::summarise(counts = dplyr::n(),across(polya_length,.fns=summary_functions))
+  
+  }
+  else {
+    polya_data_summarized <-
+      polya_data %>% dplyr::ungroup() %>% dplyr::group_by(across(c({{ transcript_id_column }},{{ groupBy }}))) %>% dplyr::summarise(counts = dplyr::n())
+    
+  }
+  if (!is.na(quantiles)) {
+    polya_data_summarized_quantiles <-
+      polya_data %>% dplyr::ungroup() %>% dplyr::group_by(across(c({{ transcript_id_column }},{{ groupBy }}))) %>% dplyr::summarise(calculate_quantiles(polya_length,probs=quantiles)) %>% tidyr::pivot_wider(names_from="quantile",values_from="quantile_val",names_prefix = "q_")
+    polya_data_summarized <- polya_data_summarized %>% dplyr::left_join(polya_data_summarized_quantiles)
+    
+  }
+  
+  
+  return(polya_data_summarized)
+}
 
 
 #' Calculates PCA using polya predictions or counts

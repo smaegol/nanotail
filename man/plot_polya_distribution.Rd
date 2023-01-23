@@ -14,6 +14,7 @@ plot_polya_distribution(
   subsample = NA,
   ndensity = TRUE,
   mode_method = "density",
+  auto_scale = T,
   ...
 )
 }
@@ -35,6 +36,8 @@ plot_polya_distribution(
 \item{ndensity}{Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)}
 
 \item{mode_method}{method used for the mode calculation (argument to modeest::mlv method parameter)}
+
+\item{auto_scale}{automatically adjust axis scales (default=TRUE)}
 
 \item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }

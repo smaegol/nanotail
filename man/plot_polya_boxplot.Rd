@@ -13,6 +13,7 @@ plot_polya_boxplot(
   violin = FALSE,
   add_points = FALSE,
   max_points = 500,
+  auto_scale = T,
   ...
 )
 }
@@ -32,6 +33,8 @@ plot_polya_boxplot(
 \item{add_points}{should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}}
 
 \item{max_points}{maximum number of points to be plotted if add_points is specified}
+
+\item{auto_scale}{automatically adjust axis scales (default=TRUE)}
 
 \item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
