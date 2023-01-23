@@ -225,7 +225,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,transcript=NA,...) {
+plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,transcript_id,...) {
   
   
   if (missing(polya_data)) {
@@ -252,6 +252,11 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
       assertthat::assert_that(condition2 != condition1,msg="condition2 should be different than condition1")
       polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
     }
+  }
+  
+  if (!is.null(transcript_id)) {
+
+    polya_data <- polya_data[polya_data[[transcript_id_column]] %in% c(transcript_id),]
   }
   
   polya_data <- polya_data %>% dplyr::group_by(!!rlang::sym(groupingFactor)) %>% dplyr::add_count() %>% dplyr::ungroup() %>% dplyr::mutate(label = paste0("(n=", n, ")"))
