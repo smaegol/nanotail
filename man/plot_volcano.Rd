@@ -4,15 +4,25 @@
 \alias{plot_volcano}
 \title{Plots volcano plot of differential expression analysis}
 \usage{
-plot_volcano(input_data, color_palette = "Set1",
-  reverse_palette = FALSE)
+plot_volcano(
+  input_data,
+  transcript_id_column,
+  labels = FALSE,
+  nlabels = 10,
+  ...
+)
 }
 \arguments{
 \item{input_data}{a table with output from \link{calculate_diff_exp_binom} or \link{calculate_polya_stats}}
 
-\item{color_palette}{RColorBrewer palette to use}
+\item{transcript_id_column}{column used for transcript id}
 
-\item{reverse_palette}{should the palette be reserved}
+\item{labels}{show point labels using ggrepel}
+
+\item{nlabels}{number of labels to show
+#'}
+
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object

@@ -4,7 +4,9 @@
 [![Build Status](https://travis-ci.org/smaegol/nanotail.svg?branch=master)](https://travis-ci.org/smaegol/nanotail)
 [![codecov](https://codecov.io/gh/smaegol/nanotail/branch/master/graph/badge.svg)](https://codecov.io/gh/smaegol/nanotail)
 [![DOI](https://zenodo.org/badge/176952175.svg)](https://zenodo.org/badge/latestdoi/176952175)
-[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/smaegol/nanotail?branch=master&svg=true)](https://ci.appveyor.com/project/smaegol/nanotail)
+[![Licence](https://img.shields.io/badge/licence-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[![GitHub release](https://img.shields.io/github/release/smaegol/nanotail.svg)
+
 <!-- badges: end -->
 
 The goal of **NanoTail** is to provide a set of functions to manipulate and analyze data coming from polyA lengths estimations done using Oxford Nanopore Direct RNA sequencing and Nanopolish software. Existing solutions, like [Pipeline for testing shifts in poly(A) tail lengths estimated by nanopolish](https://github.com/nanoporetech/pipeline-polya-diff/) are, in our opinion, not sufficient for in-depth analysis of such data.

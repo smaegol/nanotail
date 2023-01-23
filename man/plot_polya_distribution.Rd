@@ -4,11 +4,19 @@
 \alias{plot_polya_distribution}
 \title{Plots polya distribution as ndensity plot}
 \usage{
-plot_polya_distribution(polya_data, groupingFactor = NA,
-  parameter_to_plot = "polya_length", scale_x_limit_low = NA,
-  scale_x_limit_high = NA, color_palette = "Set1",
-  reverse_palette = FALSE, plot_title = NA, condition1 = NA,
-  condition2 = NA)
+plot_polya_distribution(
+  polya_data,
+  groupingFactor = NA,
+  parameter_to_plot = "polya_length",
+  condition1 = NA,
+  condition2 = NA,
+  show_center_values = "none",
+  subsample = NA,
+  ndensity = TRUE,
+  mode_method = "density",
+  auto_scale = T,
+  ...
+)
 }
 \arguments{
 \item{polya_data}{input data with polyA predictions}
@@ -17,19 +25,21 @@ plot_polya_distribution(polya_data, groupingFactor = NA,
 
 \item{parameter_to_plot}{what to plot on x scale (defaults to polya_length)}
 
-\item{scale_x_limit_low}{lower limit of x axis}
-
-\item{scale_x_limit_high}{upper limit of x axis}
-
-\item{color_palette}{RcolorBrewer palette}
-
-\item{reverse_palette}{should color palette be reversed? (TRUE or FALSE)}
-
-\item{plot_title}{(optional) plot title (parameter for ggtitle)}
-
 \item{condition1}{First condition to include on the plot}
 
 \item{condition2}{Second condition to include on the plot}
+
+\item{show_center_values}{Show center values as vertical line. Possible values: "none","median","mean"}
+
+\item{subsample}{Subsample input table, provide either absolute number or fraction}
+
+\item{ndensity}{Should ndensity (scaled density) be plotted instead of normal denisty (default = TRUE)}
+
+\item{mode_method}{method used for the mode calculation (argument to modeest::mlv method parameter)}
+
+\item{auto_scale}{automatically adjust axis scales (default=TRUE)}
+
+\item{...}{parameters passed to .basic_aesthetics function (scale_x_limit_low = NA, scale_x_limit_high = NA, scale_y_limit_low = NA, scale_y_limit_high = NA, color_palette = "Set1",plot_title=NA)}
 }
 \value{
 \link[ggplot2]{ggplot} object
