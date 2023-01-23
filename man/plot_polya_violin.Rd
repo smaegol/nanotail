@@ -17,6 +17,7 @@ plot_polya_violin(
   fill_by = NA,
   auto_scale = T,
   transcript_id,
+  transcript_id_column = "transcript",
   ...
 )
 }

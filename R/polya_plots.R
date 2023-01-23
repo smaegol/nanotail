@@ -33,7 +33,7 @@ plot_polyA_PCA <- function(pca_object,samples_names) {
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="density",auto_scale=T,...) {
+plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_plot = "polya_length", condition1=NA,condition2=NA,show_center_values="none",subsample=NA,ndensity=TRUE,mode_method="density",auto_scale=T,transcript_id=NULL,transcript_id_column="transcript",...) {
 
 
   if (missing(polya_data)) {
@@ -56,6 +56,12 @@ plot_polya_distribution <- function(polya_data, groupingFactor=NA, parameter_to_
         polya_data <- polya_data %>% dplyr::filter(!!rlang::sym(groupingFactor) %in% c(condition1,condition2))
       }
     }
+    
+    if (!is.null(transcript_id)) {
+      
+      polya_data <- polya_data[polya_data[[transcript_id_column]] %in% c(transcript_id),]
+    }
+    
     if(!is.na(subsample)) {
       polya_data <- subsample_table(polya_data,groupingFactor = groupingFactor,subsample=subsample)
     }
@@ -225,7 +231,7 @@ plot_polya_boxplot <- function(polya_data, groupingFactor,additional_grouping_fa
 #' @return \link[ggplot2]{ggplot} object
 #' @export
 #'
-plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,transcript_id,...) {
+plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_factor=NA,condition1=NA,condition2=NA,violin=FALSE,add_points=FALSE,max_points=500,add_boxplot=TRUE,fill_by=NA,auto_scale=T,transcript_id,transcript_id_column="transcript",...) {
   
   
   if (missing(polya_data)) {
@@ -296,7 +302,7 @@ plot_polya_violin <- function(polya_data, groupingFactor,additional_grouping_fac
   
   
   
-  transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...)
+  transcripts_boxplot <- .basic_aesthetics(transcripts_boxplot,...) 
   
   return(transcripts_boxplot)
 }
@@ -688,6 +694,10 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
     ggplot_object <- ggplot_object + ggplot2::ggtitle(plot_title)
   }
 
+  
+  # get rid of ggplot-style grey background
+  ggplot_object <- ggplot_object + ggplot2::theme_bw()
+  
   return(ggplot_object)
 
 }
