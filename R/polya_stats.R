@@ -674,3 +674,54 @@ kruskal_polya <- function(input_data,grouping_factor="sample_name",transcript_id
   }
   
 }
+
+
+
+#' Normalize counts to sequencingdepth
+#'
+#' @param summarized_data - output of summarize_polya_per_transcript()
+#' @param raw_data - raw polyA data (loaded with read_polya_single() or read_polya_multiple())
+#' @param spike_in_data - spike-in data for normalization (optional) (raw polya data loaded with read_polya_single() or read_polya_multiple(), with the  same metadata as raw data)
+#' @param groupBy - grouping variable
+#' @param force - force recalculation
+#'
+#' @return data.frame (tibble) with normalized data
+#' @export
+#'
+
+normalize_counts_to_depth <- function(summarized_data,raw_data,spike_in_data=NULL,groupBy,force=F) {
+  
+  
+  
+  if ("norm_counts" %in% colnames(summarized_data) && force==F) {
+    stop("Input table contains already normalized counts, if you want to rerun normalization on existing data please use force=T")
+  }
+  else if ("norm_counts" %in% colnames(summarized_data) && force==T) {
+    
+    summarized_data$temp_counts <- summarized_data$counts
+  }
+  else if ("counts" %in% colnames(summarized_data))  {
+    summarized_data$temp_counts <- summarized_data$counts
+  }
+  else {
+    stop("Missing counts column in the input data")
+  }
+  
+  if(!is.null(spike_in_data)) {
+    spike_in_norm_factors <- spike_in_data %>% dplyr::group_by(across({{groupBy}})) %>% dplyr::count() %>% dplyr::ungroup() %>% dplyr::mutate(norm_factor=n/min(n))
+  }
+  
+  norm_factors <- raw_data %>% dplyr::group_by(across({{groupBy}})) %>% dplyr::count() %>% dplyr::ungroup() %>% dplyr::mutate(norm_factor=n/min(n))
+  
+  print(norm_factors)
+  
+  normalized_data <- summarized_data %>% dplyr::left_join(norm_factors,by={{groupBy}}) %>% dplyr::mutate(norm_counts=temp_counts/norm_factor) %>% dplyr::select(-c(temp_counts,norm_factor,n)) 
+  
+  
+  if(!is.null(spike_in_data))  {
+    normalized_data$temp_counts <- normalized_data$norm_counts
+    normalized_data <- normalized_data %>% dplyr::left_join(spike_in_norm_factors,by={{groupBy}}) %>% dplyr::mutate(norm_counts=temp_counts/norm_factor) %>% dplyr::select(-c(temp_counts,norm_factor,n))
+  }
+  
+  return(normalized_data)
+}
