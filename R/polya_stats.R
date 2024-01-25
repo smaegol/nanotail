@@ -73,7 +73,8 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
     polya_data_stat$fold_change <- polya_data_stat[[paste0(condition2,"_polya_",length_summary_to_show)]] / polya_data_stat[[paste0(condition1,"_polya_",length_summary_to_show)]]
   }
   message("Adjusting p.value")
-  polya_data_stat$padj <- p.adjust(polya_data_stat$p.value, method = "BH")
+  # polya_data_stat$padj <- p.adjust(polya_data_stat$p.value, method = "BH")
+  polya_data_stat <- polya_data_stat %>% mutate(padj = ifelse(stats_code == "OK", p.adjust(p.value, method = "BH"), NA))
   polya_data_stat<- polya_data_stat %>% dplyr::mutate(effect_size=dplyr::case_when((abs(cohen_d))<0.2 ~ "negligible",(abs(cohen_d)<0.5) ~ "small", (abs(cohen_d)<0.8) ~ "medium",(abs(cohen_d)>=0.8) ~ "large",TRUE ~ "NA"))
   
   # create significance factor
