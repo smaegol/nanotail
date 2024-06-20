@@ -14,7 +14,7 @@
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA) {
+read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, dorado = FALSE) {
     # required asserts
 
     #check if parameters are provided
@@ -30,8 +30,20 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA) {
     message(paste0("Loading data from ",polya_path))
 
     #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
+    
+    file_header <- read.table(polya_path,nrows=1)
+    if (sum(grepl("pt",file_header))>0) {
+      message("Seems like output from dorado. ")
+      dorado = TRUE
+    }
+    
     polya_data <- data.table::fread(polya_path, integer64 = "numeric", data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE,showProgress = FALSE) %>% dplyr::as_tibble()
-    polya_data <- polya_data %>% dplyr::mutate(polya_length = round(polya_length),dwell_time=transcript_start-polya_start)
+    if (!dorado) {
+      polya_data <- polya_data %>% dplyr::mutate(polya_length = round(polya_length),dwell_time=transcript_start-polya_start)
+    }
+    else {
+      polya_data <- polya_data %>% dplyr::mutate(polya_length = round(pt),dwell_time=NA) %>% dplyr::rename(contig=reference)
+    }
     # change first column name
     colnames(polya_data)[1] <- "read_id"
     # transcript names, if mapping to gencode transcriptome
