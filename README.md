@@ -14,10 +14,23 @@ The software is still in the development phase so all suggestions are welcome. P
 
 ## Installation
 
-You can install the developmental version of Nanotail with
+### Prerequisities
+
+As `asserrtive` package was [removed from CRAN](https://cran.r-project.org/web/packages/assertive/index.html) it is currently impossible to install nanotail without prior manual installation of assertive package. We are working on exchanging the `assertive` package with its equivalent. However, for now, it is required to install all assertive packages manually:
+
+```r
+install.packages("devtools")
+devtools::install_bitbucket("richierocks/assertive.properties") # install this one first as other packages depend on it
+devtools::install_bitbucket(c("richierocks/assertive.files", "richierocks/assertive.strings", "richierocks/assertive.numbers", "richierocks/assertive.matrices", "richierocks/assertive.sets", "richierocks/assertive.strings", "richierocks/assertive.models", "richierocks/assertive.reflection", "richierocks/assertive.types", "richierocks/assertive.datetimes", "richierocks/assertive.data", "richierocks/assertive.data.uk", "richierocks/assertive.data.us", "richierocks/assertive.code"))
+devtools::install_bitbucket("richierocks/assertive.properties") # install this one first as other packages depend on it
+devtools::install_bitbucket("richierocks/assertive")
+```
+
+
+
+Now you can install the developmental version of Nanotail with
 
 ``` r
-install.packages("devtools")
 devtools::install_github('smaegol/nanotail')
 library(nanotail)
 ```
